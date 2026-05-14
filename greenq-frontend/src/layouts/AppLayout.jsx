@@ -1,0 +1,94 @@
+import { Activity, AlertTriangle, BarChart3, Bell, ClipboardCheck, Home, Layers3, Leaf, LogOut, Map, Trash2, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { greenqApi } from "../api/greenqApi.js";
+import { issueStatusLabel, labelOf } from "../data/displayLabels.js";
+import { clearCurrentUser, getCurrentUser } from "../utils/auth.js";
+
+const menus = [
+  { label: "대시보드", path: "/dashboard", match: "/dashboard", icon: Home },
+  { label: "작물/기준 관리", path: "/crops", match: "/crops", icon: Leaf },
+  { label: "구역/배치 관리", path: "/zones", match: "/zones", icon: Map },
+  { label: "환경 모니터링", path: "/environment", match: "/environment", icon: Activity },
+  { label: "실측/품질 관리", path: "/quality", match: "/quality", icon: ClipboardCheck },
+  { label: "부적합 이력", path: "/issues", match: "/issues", icon: AlertTriangle },
+  { label: "리포트", path: "/reports", match: "/reports", icon: BarChart3 },
+  { label: "사용자 관리", path: "/users", match: "/users", icon: Users, adminOnly: true },
+  { label: "삭제 데이터 관리", path: "/deleted-data", match: "/deleted-data", icon: Trash2, adminOnly: true },
+];
+
+function normalizeIssueType(type) {
+  return String(type || "").toLowerCase() === "quality" ? "quality" : "env";
+}
+
+export default function AppLayout() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const user = getCurrentUser();
+  const role = user.role || user.roleCode || "WORKER";
+  const isWorker = role === "WORKER";
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [alerts, setAlerts] = useState([]);
+
+  useEffect(() => {
+    let alive = true;
+    greenqApi.envIssueAlerts()
+      .then((rows) => {
+        if (!alive) return;
+        setAlerts(rows || []);
+      })
+      .catch(() => alive && setAlerts([]));
+    return () => { alive = false; };
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    clearCurrentUser();
+    setNotificationOpen(false);
+    navigate("/login", { replace: true });
+  };
+
+  const visibleMenus = menus.filter((menu) => !(menu.adminOnly && isWorker));
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <button className="brand" type="button" onClick={() => navigate("/dashboard")}>
+          <div className="brand-mark">GQ</div><div><h1>GreenQ</h1><p>Plant Factory QC</p></div>
+        </button>
+        <nav className="side-nav">
+          {visibleMenus.map((menu) => {
+            const Icon = menu.icon;
+            const active = location.pathname.startsWith(menu.match);
+            return <Link key={menu.path} to={menu.path} className={`nav-item ${active ? "active" : ""}`} title={menu.label}><Icon size={18} /><span>{menu.label}</span></Link>;
+          })}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="mini-card"><Layers3 size={18} /><div><strong>GreenQ</strong><p>환경·품질 운영 화면</p></div></div>
+          <button type="button" className="logout-button" onClick={handleLogout}><LogOut size={17} /><span>로그아웃</span></button>
+        </div>
+      </aside>
+
+      <section className="main-area">
+        <header className="topbar">
+          <div><p className="eyebrow">GreenQ Frontend</p><strong>{user.name || user.userName || "사용자"}</strong><span className={`role-chip ${role === "ADMIN" ? "admin" : "worker"}`}>{labelOf(role)}</span></div>
+          <div className="topbar-actions">
+            <button type="button" className={`notification-button ${notificationOpen ? "active" : ""}`} onClick={() => setNotificationOpen((prev) => !prev)} title="환경 부적합 알림">
+              <Bell size={18} /><span>알림</span>{alerts.length > 0 && <em>{alerts.length}</em>}
+            </button>
+            {notificationOpen && (
+              <div className="notification-preview open">
+                <div className="notification-preview-head"><strong>환경 부적합 알림</strong><button type="button" onClick={() => navigate("/issues?type=env")}>전체 보기</button></div>
+                {alerts.length === 0 ? <p className="notification-empty">확인할 환경 부적합 알림이 없습니다.</p> : alerts.slice(0, 4).map((alert) => (
+                  <button key={`alert-${alert.issueId}`} type="button" onClick={() => { setNotificationOpen(false); navigate(`/issues/${normalizeIssueType(alert.issueType)}/${alert.rawId || String(alert.issueId).replace(/^(ENV|QLT)-/i, "")}`); }}>
+                    <span>{alert.zoneName} · {alert.itemName}</span><small>{labelOf(alert.severity)} / {issueStatusLabel(alert.issueType, alert.status)}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </header>
+        <main className="content"><Outlet /></main>
+      </section>
+    </div>
+  );
+}
