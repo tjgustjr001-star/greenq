@@ -51,15 +51,17 @@ public class EnvironmentSimulatorService {
 
     @Scheduled(cron = "0 0,30 * * * *", zone = "Asia/Seoul")
     public void runEveryThirtyMinutes() {
-        generateAt(false, null, currentHalfHourSlot());
+        generateAt(false, null, currentHalfHourSlot(), true);
     }
 
     public Map<String, Object> generate(boolean forceAbnormal, Long batchId) {
-        return generateAt(forceAbnormal, batchId, LocalDateTime.now());
+        return generateAt(forceAbnormal, batchId, LocalDateTime.now(), false);
     }
 
-    private Map<String, Object> generateAt(boolean forceAbnormal, Long batchId, LocalDateTime measuredAt) {
-        LocalDateTime now = measuredAt.withSecond(0).withNano(0);
+    private Map<String, Object> generateAt(boolean forceAbnormal, Long batchId, LocalDateTime measuredAt, boolean fixedSlot) {
+        LocalDateTime now = normalizeMeasuredAt(measuredAt, fixedSlot);
+        LocalDateTime createdAt = LocalDateTime.now().withNano(0);
+        String dataSource = fixedSlot ? "SIMULATOR" : "SIMULATOR_TEST";
         List<CultivationBatch> targetBatches = batchRepository.findAll().stream()
                 .filter(batch -> !"Y".equalsIgnoreCase(nvl(batch.getDeleteYn(), "N")))
                 .filter(batch -> "GROWING".equalsIgnoreCase(nvl(batch.getBatchStatus(), "")))
@@ -84,15 +86,15 @@ public class EnvironmentSimulatorService {
                 abnormalCode = pickAbnormalCode(standards, batchIndex);
             }
 
-            if (!forceAbnormal && existsSimulatorLogForSlot(batch.getBatchId(), now)) {
+            if (fixedSlot && !forceAbnormal && existsSimulatorLogForSlot(batch.getBatchId(), now)) {
                 continue;
             }
 
             EnvironmentLog log = new EnvironmentLog();
             log.setBatchId(batch.getBatchId());
             log.setMeasuredAt(now);
-            log.setCreatedAt(now);
-            log.setDataSource(forceAbnormal ? "SIMULATOR_TEST" : "SIMULATOR");
+            log.setCreatedAt(createdAt);
+            log.setDataSource(dataSource);
             log.setDeleteYn("N");
 
             List<EvalDraft> drafts = new ArrayList<>();
@@ -123,7 +125,7 @@ public class EnvironmentSimulatorService {
                 EnvEvaluationItem item = new EnvEvaluationItem();
                 item.setBatchId(batch.getBatchId());
                 item.setEnvLogId(savedLog.getEnvLogId());
-                item.setCreatedAt(now);
+                item.setCreatedAt(createdAt);
                 item.setStandardItemId(draft.standard().standardItemId());
                 item.setItemCode(draft.standard().itemCode());
                 item.setItemName(draft.standard().itemName());
@@ -159,6 +161,14 @@ public class EnvironmentSimulatorService {
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
         int minute = now.getMinute() < 30 ? 0 : 30;
         return now.withMinute(minute);
+    }
+
+    private LocalDateTime normalizeMeasuredAt(LocalDateTime measuredAt, boolean fixedSlot) {
+        LocalDateTime base = measuredAt == null ? LocalDateTime.now() : measuredAt;
+        if (fixedSlot) {
+            return base.withSecond(0).withNano(0);
+        }
+        return base.withNano(0);
     }
 
     private boolean existsSimulatorLogForSlot(Long batchId, LocalDateTime measuredAt) {
@@ -272,7 +282,7 @@ public class EnvironmentSimulatorService {
         nc.setEnvNcStatus("OPEN");
         nc.setGuideMessage(guideMessage(draft.standard().itemCode(), draft.measuredValue(), draft.standard()));
         nc.setOccurredAt(now);
-        nc.setCreatedAt(now);
+        nc.setCreatedAt(LocalDateTime.now().withNano(0));
         nc.setDeleteYn("N");
         nonconformityRepository.save(nc);
     }
