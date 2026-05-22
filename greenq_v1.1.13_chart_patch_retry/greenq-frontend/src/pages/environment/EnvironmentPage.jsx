@@ -49,44 +49,18 @@ function toTime(row) {
   return Number.isFinite(time) ? time : null;
 }
 
-function inferCropNameFromBatch(row) {
-  const explicitCropName = String(row?.cropName ?? "").trim();
-  if (explicitCropName) return explicitCropName;
-
-  const batchName = String(row?.batchName ?? "").trim();
-  if (!batchName) return "";
-
-  let inferred = batchName;
-  const zoneName = String(row?.zoneName ?? "").trim();
-  if (zoneName && inferred.startsWith(zoneName)) {
-    inferred = inferred.slice(zoneName.length).trim();
-  }
-
-  inferred = inferred
-    .replace(/20\d{2}[-./년]\s*\d{1,2}(?:월)?/g, " ")
-    .replace(/\d+\s*차/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return inferred || batchName;
-}
-
 function getSeriesKey(row, groupBy) {
-  if (groupBy === "crop") {
-    const label = getSeriesLabel(row, groupBy);
-    return String(row.cropId ?? row.cropName ?? label ?? row.batchId ?? "unknown");
-  }
+  if (groupBy === "crop") return String(row.cropId ?? row.cropName ?? row.batchId ?? "unknown");
   if (groupBy === "batch") return String(row.batchId ?? row.batchName ?? "unknown");
   return "single";
 }
 
 function getSeriesLabel(row, groupBy) {
   if (groupBy === "crop") {
-    const cropName = inferCropNameFromBatch(row) || "배치 미지정";
-    const varietyName = String(row?.varietyName ?? "").trim();
-    return varietyName ? `${cropName} · ${varietyName}` : cropName;
+    const cropName = row.cropName || "작물 미지정";
+    return row.varietyName ? `${cropName} · ${row.varietyName}` : cropName;
   }
-  if (groupBy === "batch") return row.batchName || inferCropNameFromBatch(row) || "배치 미지정";
+  if (groupBy === "batch") return row.batchName || row.cropName || "배치 미지정";
   return "선택 배치";
 }
 
@@ -162,9 +136,9 @@ function MetricChart({ title, unit, rows, metric, min, max, rangeLabel, groupBy 
       <div className="chart-head">
         <div>
           <strong>{title}</strong>
-          <p>{rangeLabel} 측정값 추이</p>
+          <p>{rangeLabel} 측정값 추이{isMultiSeries ? " · 작물별" : ""}</p>
         </div>
-        {!isMultiSeries && <span>{`${formatChartValue(latestPoint?.value)}${unit}`}</span>}
+        <span>{isMultiSeries ? "작물별" : `${formatChartValue(latestPoint?.value)}${unit}`}</span>
       </div>
       <div className="chart-plot">
         <div className="chart-y-scale" aria-hidden="true">
@@ -195,6 +169,9 @@ function MetricChart({ title, unit, rows, metric, min, max, rangeLabel, groupBy 
             </span>
           ))}
         </div>
+      )}
+      {isMultiSeries && latestPoint && (
+        <p className="chart-note">최신값: {latestPoint.label} {formatChartValue(latestPoint.value)}{unit}</p>
       )}
     </div>
   );
@@ -328,7 +305,7 @@ export default function EnvironmentPage() {
             <strong>조회 조건</strong>
             <p>{scopeLabel} 기준으로 {selectedRange.label} 데이터를 조회합니다.</p>
           </div>
-          <span>{selectedRange.help}</span>
+          <span>{selectedBatchId ? selectedRange.help : `${selectedRange.help} · 작물별 범례`}</span>
         </div>
         <div className="environment-filter-grid">
           <label>
