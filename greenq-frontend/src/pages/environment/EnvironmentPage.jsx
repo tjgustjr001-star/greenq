@@ -82,11 +82,22 @@ function getSeriesKey(row, groupBy) {
 
 function getSeriesLabel(row, groupBy) {
   if (groupBy === "crop") {
-    const cropName = inferCropNameFromBatch(row) || "배치 미지정";
-    const varietyName = String(row?.varietyName ?? "").trim();
-    return varietyName ? `${cropName} · ${varietyName}` : cropName;
+    const cropName =
+      String(row?.cropName ?? "").trim() ||
+      inferCropNameFromBatch(row) ||
+      "작물 미지정";
+
+    return cropName;
   }
-  if (groupBy === "batch") return row.batchName || inferCropNameFromBatch(row) || "배치 미지정";
+
+  if (groupBy === "batch") {
+    return (
+      String(row?.batchName ?? "").trim() ||
+      inferCropNameFromBatch(row) ||
+      "배치 미지정"
+    );
+  }
+
   return "선택 배치";
 }
 
