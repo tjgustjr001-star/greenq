@@ -86,7 +86,11 @@ public class GreenqQueryService {
     }
 
     public Map<String, Object> crop(Long id) {
-        return cropRepository.findById(id).map(this::cropMap).orElseThrow();
+        Crop crop = cropRepository.findById(id).orElseThrow();
+        if ("Y".equalsIgnoreCase(nullToN(crop.getDeleteYn()))) {
+            throw new NoSuchElementException("삭제된 작물입니다.");
+        }
+        return cropMap(crop);
     }
 
     private Map<String, Object> cropMap(Crop c) {
@@ -135,7 +139,11 @@ public class GreenqQueryService {
     }
 
     public Map<String, Object> zone(Long id) {
-        return zoneRepository.findById(id).map(this::zoneMap).orElseThrow();
+        Zone zone = zoneRepository.findById(id).orElseThrow();
+        if ("Y".equalsIgnoreCase(nullToN(zone.getDeleteYn()))) {
+            throw new NoSuchElementException("삭제된 구역입니다.");
+        }
+        return zoneMap(zone);
     }
 
     private Map<String, Object> zoneMap(Zone z) {
@@ -168,6 +176,8 @@ public class GreenqQueryService {
                 join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = b.zone_id
                 where coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 order by b.batch_id
                 """;
         @SuppressWarnings("unchecked") List<Object[]> rows = em.createNativeQuery(sql).getResultList();
@@ -246,6 +256,9 @@ public class GreenqQueryService {
                 join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = b.zone_id
                 where coalesce(el.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 """);
         if (batchId != null) sql.append(" and el.batch_id = :batchId ");
         if (zoneId != null) sql.append(" and b.zone_id = :zoneId ");
@@ -264,7 +277,12 @@ public class GreenqQueryService {
                 select max(el.measured_at)
                 from environment_log el
                 join cultivation_batch b on b.batch_id = el.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(el.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 """);
         if (batchId != null) sql.append(" and el.batch_id = :batchId ");
         if (zoneId != null) sql.append(" and b.zone_id = :zoneId ");
@@ -329,9 +347,13 @@ public class GreenqQueryService {
                 from env_alert a
                 join env_nonconformity nc on nc.env_nc_id = a.env_nc_id
                 join cultivation_batch b on b.batch_id = a.batch_id
+                join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = a.zone_id
                 left join user_account ru on ru.user_id = a.read_by
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 """);
         if (status != null && !status.isBlank()) sql.append(" and a.alert_status = :status ");
         if (envNcId != null) sql.append(" and a.env_nc_id = :envNcId ");
@@ -405,9 +427,13 @@ public class GreenqQueryService {
                        coalesce(sum(case when a.alert_status <> 'CLOSED' then 1 else 0 end), 0) as active_alert_count
                 from env_nonconformity nc
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = nc.zone_id
                 left join env_alert a on a.env_nc_id = nc.env_nc_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 group by nc.env_nc_id, nc.occurred_at, nc.resolved_at, nc.env_nc_status, nc.severity,
                          nc.item_code, nc.item_name, nc.measured_value, nc.standard_min, nc.standard_max,
                          nc.deviation_rate, nc.guide_message, b.batch_name, z.zone_name, nc.batch_id, nc.zone_id
@@ -439,10 +465,16 @@ public class GreenqQueryService {
                 from quality_nonconformity nc
                 join quality_evaluation qe on qe.quality_eval_id = nc.quality_eval_id
                 left join quality_evaluation_item qei on qei.quality_eval_item_id = nc.quality_eval_item_id
+                join growth_measurement gm on gm.measurement_id = nc.measurement_id
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = b.zone_id
                 left join quality_review_log qr on qr.quality_eval_id = nc.quality_eval_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 group by nc.quality_nc_id, nc.occurred_at, nc.quality_nc_status, nc.severity,
                          nc.item_code, nc.item_name, nc.measured_value, nc.standard_min, nc.standard_max,
                          nc.deviation_rate, nc.recommended_next_action, b.batch_name, z.zone_name,
@@ -490,6 +522,9 @@ public class GreenqQueryService {
                     where qe2.measurement_id = gm.measurement_id
                 )
                 where coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 order by gm.measured_at desc, gm.measurement_id desc
                 """;
         @SuppressWarnings("unchecked") List<Object[]> rows = em.createNativeQuery(sql).getResultList();
@@ -556,10 +591,12 @@ public class GreenqQueryService {
                        nc.measured_value, qei.measured_text_value, nc.standard_min, nc.standard_max, nc.deviation_rate, nc.recommended_next_action,
                        nc.quality_eval_id, nc.quality_eval_item_id, coalesce(qe.report_reflected_yn, 'N')
                 from quality_nonconformity nc
+                join growth_measurement gm on gm.measurement_id = nc.measurement_id
                 join quality_evaluation qe on qe.quality_eval_id = nc.quality_eval_id
                 left join quality_evaluation_item qei on qei.quality_eval_item_id = nc.quality_eval_item_id
                 where nc.measurement_id = :measurementId
                   and coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(gm.delete_yn, 'N') <> 'Y'
                 order by case nc.severity when 'FAIL' then 1 when 'CAUTION' then 2 else 3 end, nc.quality_nc_id
                 """;
         @SuppressWarnings("unchecked") List<Object[]> rows = em.createNativeQuery(sql).setParameter("measurementId", measurementId).getResultList();
@@ -641,6 +678,9 @@ public class GreenqQueryService {
 
     public Map<String, Object> report(Long id) {
         Report r = reportRepository.findById(id).orElseThrow();
+        if ("Y".equalsIgnoreCase(nullToN(r.getDeleteYn()))) {
+            throw new NoSuchElementException("삭제된 리포트입니다.");
+        }
         String targetName = reports().stream().filter(x -> Objects.equals(String.valueOf(x.get("reportId")), String.valueOf(id)))
                 .map(x -> String.valueOf(x.get("targetName"))).findFirst().orElse("-");
         return mapOf(
@@ -668,7 +708,12 @@ public class GreenqQueryService {
                        round(avg(el.ec), 2) as avg_ec
                 from environment_log el
                 join cultivation_batch b on b.batch_id = el.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(el.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and el.measured_at >= :startAt
                   and el.measured_at < :endAt
                 """);
@@ -692,7 +737,12 @@ public class GreenqQueryService {
                 select el.env_status, count(*)
                 from environment_log el
                 join cultivation_batch b on b.batch_id = el.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(el.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and el.measured_at >= :startAt
                   and el.measured_at < :endAt
                 """);
@@ -709,7 +759,12 @@ public class GreenqQueryService {
                 select coalesce(gm.quality_status, 'MISSING') as quality_status, count(*)
                 from growth_measurement gm
                 join cultivation_batch b on b.batch_id = gm.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and gm.measured_at >= :startAt
                   and gm.measured_at < :endAt
                 """);
@@ -730,7 +785,12 @@ public class GreenqQueryService {
                        max(nc.deviation_rate) as max_deviation_rate
                 from env_nonconformity nc
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and nc.occurred_at >= :startAt
                   and nc.occurred_at < :endAt
                 """);
@@ -755,8 +815,15 @@ public class GreenqQueryService {
                        sum(case when nc.severity = 'FAIL' then 1 else 0 end) as fail_count,
                        max(nc.deviation_rate) as max_deviation_rate
                 from quality_nonconformity nc
+                join growth_measurement gm on gm.measurement_id = nc.measurement_id
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and nc.occurred_at >= :startAt
                   and nc.occurred_at < :endAt
                 """);
@@ -864,6 +931,8 @@ public class GreenqQueryService {
                 join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = b.zone_id
                 where coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and b.batch_status = 'GROWING'
                   and not exists (
                         select 1
@@ -892,8 +961,12 @@ public class GreenqQueryService {
                 from env_alert a
                 join env_nonconformity nc on nc.env_nc_id = a.env_nc_id
                 join cultivation_batch b on b.batch_id = a.batch_id
+                join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = a.zone_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and a.alert_status = 'UNREAD'
                   and (a.notified_role in ('WORKER', 'ALL') or a.notified_role is null
                 """);
@@ -927,9 +1000,13 @@ public class GreenqQueryService {
                        gm.quality_status, gm.measured_by, ua.user_name
                 from growth_measurement gm
                 join cultivation_batch b on b.batch_id = gm.batch_id
+                join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = b.zone_id
                 left join user_account ua on ua.user_id = gm.measured_by
                 where coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 """);
         if (userId != null) sql.append(" and gm.measured_by = :userId ");
         sql.append(" order by gm.measured_at desc, gm.measurement_id desc limit 20");
@@ -952,9 +1029,13 @@ public class GreenqQueryService {
                 from env_action_log al
                 join env_nonconformity nc on nc.env_nc_id = al.env_nc_id
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = nc.zone_id
                 left join user_account ua on ua.user_id = al.action_by
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                 """);
         if (userId != null) sql.append(" and al.action_by = :userId ");
         sql.append(" order by al.action_at desc, al.env_action_id desc limit 20");

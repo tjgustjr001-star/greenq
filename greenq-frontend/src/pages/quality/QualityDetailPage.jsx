@@ -5,6 +5,7 @@ import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { issueStatusLabel, labelOf } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
+import { getCurrentUser } from "../../utils/auth.js";
 
 function fmtValue(value, unit = "") {
   if (value === null || value === undefined || value === "") return "-";
@@ -14,6 +15,7 @@ function fmtValue(value, unit = "") {
 export default function QualityDetailPage() {
   const { measurementId } = useParams();
   const navigate = useNavigate();
+  const isAdmin = (getCurrentUser().role || getCurrentUser().roleCode) === "ADMIN";
   const { data: measurement, loading, error } = useApiData(() => greenqApi.measurement(measurementId), [measurementId]);
   const deleteMeasurement = async () => {
     if (!window.confirm("실측 데이터를 DB에서 임시 삭제 처리합니다.")) return;
@@ -36,7 +38,7 @@ export default function QualityDetailPage() {
         eyebrow="Quality Detail"
         title={`${measurement.batchName} 실측 상세`}
         description="실측 원본, 자동 품질 평가 결과, 품질 부적합과 검토/리포트 반영 상태를 확인합니다."
-        actions={<><button className="secondary-button" onClick={() => navigate("/quality")}>목록으로</button><button className="secondary-button" onClick={() => navigate(`/quality/new?batchId=${measurement.batchId}`)}>같은 배치 입력</button><button className="danger-button" onClick={deleteMeasurement}>삭제</button></>}
+        actions={<><button className="secondary-button" onClick={() => navigate("/quality")}>목록으로</button><button className="secondary-button" onClick={() => navigate(`/quality/new?batchId=${measurement.batchId}`)}>같은 배치 입력</button>{isAdmin && <button className="danger-button" onClick={deleteMeasurement}>삭제</button>}</>}
       />
 
       <div className="panel detail-hero">

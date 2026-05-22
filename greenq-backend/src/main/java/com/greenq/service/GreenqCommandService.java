@@ -606,14 +606,50 @@ public class GreenqCommandService {
 
     public void softDeleteEnvironmentLog(Long id) {
         EnvironmentLog log = environmentLogRepository.findById(id).orElseThrow();
+        LocalDateTime now = LocalDateTime.now();
         log.setDeleteYn("Y");
-        log.setDeletedAt(LocalDateTime.now());
+        log.setDeletedAt(now);
+
+        // 원본 환경 로그가 숨겨졌는데 부적합/알림이 운영 화면에 남는 것을 막는다.
+        em.createNativeQuery("""
+                update env_nonconformity
+                set delete_yn = 'Y', deleted_at = :deletedAt
+                where (env_log_id = :id or resolved_env_log_id = :id)
+                  and coalesce(delete_yn, 'N') <> 'Y'
+                """)
+                .setParameter("deletedAt", now)
+                .setParameter("id", id)
+                .executeUpdate();
+        em.createNativeQuery("""
+                update env_alert
+                set alert_status = 'CLOSED'
+                where env_nc_id in (
+                    select env_nc_id
+                    from env_nonconformity
+                    where env_log_id = :id or resolved_env_log_id = :id
+                )
+                  and alert_status <> 'CLOSED'
+                """)
+                .setParameter("id", id)
+                .executeUpdate();
     }
 
     public void softDeleteMeasurement(Long id) {
         GrowthMeasurement measurement = measurementRepository.findById(id).orElseThrow();
+        LocalDateTime now = LocalDateTime.now();
         measurement.setDeleteYn("Y");
-        measurement.setDeletedAt(LocalDateTime.now());
+        measurement.setDeletedAt(now);
+
+        // 실측 데이터가 숨겨졌는데 품질 부적합이 운영 화면에 남는 것을 막는다.
+        em.createNativeQuery("""
+                update quality_nonconformity
+                set delete_yn = 'Y', deleted_at = :deletedAt
+                where measurement_id = :id
+                  and coalesce(delete_yn, 'N') <> 'Y'
+                """)
+                .setParameter("deletedAt", now)
+                .setParameter("id", id)
+                .executeUpdate();
     }
 
     public void softDeleteReport(Long id) {
@@ -623,10 +659,16 @@ public class GreenqCommandService {
     }
 
     public void softDeleteIssue(String issueType, Long rawId) {
-        String table = "quality".equalsIgnoreCase(issueType) ? "quality_nonconformity" : "env_nonconformity";
-        String idColumn = "quality".equalsIgnoreCase(issueType) ? "quality_nc_id" : "env_nc_id";
+        boolean quality = "quality".equalsIgnoreCase(issueType);
+        String table = quality ? "quality_nonconformity" : "env_nonconformity";
+        String idColumn = quality ? "quality_nc_id" : "env_nc_id";
         em.createNativeQuery("update " + table + " set delete_yn = 'Y', deleted_at = :deletedAt where " + idColumn + " = :id")
                 .setParameter("deletedAt", LocalDateTime.now()).setParameter("id", rawId).executeUpdate();
+        if (!quality) {
+            em.createNativeQuery("update env_alert set alert_status = 'CLOSED' where env_nc_id = :id and alert_status <> 'CLOSED'")
+                    .setParameter("id", rawId)
+                    .executeUpdate();
+        }
     }
 
     public void saveCropStandards(Long cropId, String standardType, Map<String, Object> req) {
@@ -686,11 +728,67 @@ public class GreenqCommandService {
             default -> throw new IllegalArgumentException("지원하지 않는 삭제 데이터 유형입니다: " + entityName);
         }
         if (hardDelete) {
+            assertHardDeleteAllowed(entityName, idValue);
             em.createNativeQuery("delete from " + table + " where " + idColumn + " = :id").setParameter("id", idValue).executeUpdate();
         } else {
             em.createNativeQuery("update " + table + " set delete_yn = :deleteYn, deleted_at = null where " + idColumn + " = :id")
                     .setParameter("deleteYn", deleteYn).setParameter("id", idValue).executeUpdate();
         }
+    }
+
+
+    private void assertHardDeleteAllowed(String entityName, Long idValue) {
+        List<DependencyRef> dependencies = switch (entityName) {
+            case "crops" -> List.of(
+                    dep("standard_set", "crop_id"), dep("cultivation_batch", "crop_id"), dep("env_nonconformity", "crop_id"),
+                    dep("quality_evaluation", "crop_id"), dep("quality_nonconformity", "crop_id"), dep("report", "crop_id")
+            );
+            case "zones" -> List.of(
+                    dep("cultivation_batch", "zone_id"), dep("env_nonconformity", "zone_id"), dep("env_alert", "zone_id"), dep("report", "zone_id")
+            );
+            case "batches" -> List.of(
+                    dep("environment_log", "batch_id"), dep("env_evaluation_item", "batch_id"), dep("env_nonconformity", "batch_id"),
+                    dep("env_alert", "batch_id"), dep("growth_measurement", "batch_id"), dep("quality_evaluation", "batch_id"),
+                    dep("quality_nonconformity", "batch_id"), dep("report", "batch_id")
+            );
+            case "environmentLogs" -> List.of(
+                    dep("env_evaluation_item", "env_log_id"), dep("env_nonconformity", "env_log_id"), dep("env_nonconformity", "resolved_env_log_id")
+            );
+            case "measurements" -> List.of(
+                    dep("growth_measurement_sample", "measurement_id"), dep("quality_evaluation", "measurement_id"),
+                    dep("quality_evaluation_item", "measurement_id"), dep("quality_nonconformity", "measurement_id")
+            );
+            case "reports" -> List.of();
+            case "issuesEnv" -> List.of(dep("env_alert", "env_nc_id"), dep("env_action_log", "env_nc_id"));
+            case "issuesQuality" -> List.of();
+            default -> throw new IllegalArgumentException("지원하지 않는 삭제 데이터 유형입니다: " + entityName);
+        };
+
+        List<String> blockers = dependencies.stream()
+                .map(dep -> dep.withCount(countDependency(dep, idValue)))
+                .filter(dep -> dep.count() > 0)
+                .map(dep -> dep.label() + " " + dep.count() + "건")
+                .toList();
+
+        if (!blockers.isEmpty()) {
+            throw new IllegalStateException("참조 데이터가 있어 영구 삭제할 수 없습니다. 먼저 관련 데이터를 정리하거나 임시 삭제 상태로 보관하세요. 참조: " + String.join(", ", blockers));
+        }
+    }
+
+    private long countDependency(DependencyRef dep, Long idValue) {
+        Object result = em.createNativeQuery("select count(*) from " + dep.table() + " where " + dep.column() + " = :id")
+                .setParameter("id", idValue)
+                .getSingleResult();
+        return result instanceof Number number ? number.longValue() : Long.parseLong(String.valueOf(result));
+    }
+
+    private DependencyRef dep(String table, String column) {
+        return new DependencyRef(table, column, 0L);
+    }
+
+    private record DependencyRef(String table, String column, long count) {
+        String label() { return table + "." + column; }
+        DependencyRef withCount(long count) { return new DependencyRef(table, column, count); }
     }
 
     private Long activeStandardSetId(Long cropId, String type) {

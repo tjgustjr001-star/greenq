@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
-    @ExceptionHandler({IllegalArgumentException.class, MethodArgumentNotValidException.class, ConstraintViolationException.class})
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, MethodArgumentNotValidException.class, ConstraintViolationException.class})
     public ResponseEntity<ApiResponse<Map<String, Object>>> badRequest(Exception e) {
         return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), Map.of()));
     }

@@ -6,6 +6,7 @@ import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { labelOf } from "../../data/displayLabels.js";
 import { useApiData } from "../../hooks/useApiData.js";
+import { getCurrentUser } from "../../utils/auth.js";
 
 const STATUS_ORDER = ["NORMAL", "CAUTION", "FAIL", "MISSING", "SKIPPED"];
 const STATUS_LABELS = {
@@ -211,6 +212,7 @@ function TopNonconformityPanel({ title, rows }) {
 export default function ReportDetailPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
+  const isAdmin = (getCurrentUser().role || getCurrentUser().roleCode) === "ADMIN";
   const { data: report, loading, error } = useApiData(() => greenqApi.report(reportId), [reportId]);
   const condition = useMemo(() => parseCondition(report?.generatedConditionJson), [report]);
   const deleteReport = async () => {
@@ -228,7 +230,7 @@ export default function ReportDetailPage() {
         eyebrow="Report Detail"
         title={report.reportTitle}
         description="발급 당시 조건으로 자동 집계되어 저장된 리포트 스냅샷입니다."
-        actions={<><button className="secondary-button" onClick={() => navigate("/reports")}>목록으로</button><button className="danger-button" onClick={deleteReport}>삭제</button></>}
+        actions={<><button className="secondary-button" onClick={() => navigate("/reports")}>목록으로</button>{isAdmin && <button className="danger-button" onClick={deleteReport}>삭제</button>}</>}
       />
 
       <div className="panel detail-hero report-hero">

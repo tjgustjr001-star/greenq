@@ -68,6 +68,9 @@ public class ReportSnapshotService {
                     join zone z on z.zone_id = b.zone_id
                     join crop c on c.crop_id = b.crop_id
                     where b.batch_id = :batchId
+                      and coalesce(b.delete_yn, 'N') <> 'Y'
+                      and coalesce(z.delete_yn, 'N') <> 'Y'
+                      and coalesce(c.delete_yn, 'N') <> 'Y'
                     """).setParameter("batchId", batchId).getResultList();
             if (!rows.isEmpty()) {
                 Object[] r = rows.get(0);
@@ -75,12 +78,12 @@ public class ReportSnapshotService {
             }
         }
         if ("ZONE".equals(scope) && zoneId != null) {
-            Object zoneName = em.createNativeQuery("select zone_name from zone where zone_id = :zoneId")
+            Object zoneName = em.createNativeQuery("select zone_name from zone where zone_id = :zoneId and coalesce(delete_yn, 'N') <> 'Y'")
                     .setParameter("zoneId", zoneId).getResultStream().findFirst().orElse(null);
             return new ScopeFilter("ZONE", null, zoneId, null, null, zoneName == null ? null : String.valueOf(zoneName), null);
         }
         if ("CROP".equals(scope) && cropId != null) {
-            Object cropName = em.createNativeQuery("select crop_name from crop where crop_id = :cropId")
+            Object cropName = em.createNativeQuery("select crop_name from crop where crop_id = :cropId and coalesce(delete_yn, 'N') <> 'Y'")
                     .setParameter("cropId", cropId).getResultStream().findFirst().orElse(null);
             return new ScopeFilter("CROP", null, null, cropId, null, null, cropName == null ? null : String.valueOf(cropName));
         }
@@ -98,7 +101,12 @@ public class ReportSnapshotService {
                        avg(el.temperature), avg(el.humidity), avg(el.ph), avg(el.ec), avg(el.co2)
                 from environment_log el
                 join cultivation_batch b on b.batch_id = el.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(el.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and el.measured_at >= :startAt and el.measured_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
@@ -116,7 +124,12 @@ public class ReportSnapshotService {
                        avg(gm.plant_height), avg(gm.leaf_width), avg(gm.leaf_length), avg(gm.fresh_weight)
                 from growth_measurement gm
                 join cultivation_batch b on b.batch_id = gm.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and gm.measured_at >= :startAt and gm.measured_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
@@ -130,7 +143,12 @@ public class ReportSnapshotService {
                        sum(case when nc.severity = 'FAIL' then 1 else 0 end)
                 from env_nonconformity nc
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and nc.occurred_at >= :startAt and nc.occurred_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
@@ -143,8 +161,15 @@ public class ReportSnapshotService {
                        sum(case when nc.severity = 'CAUTION' then 1 else 0 end),
                        sum(case when nc.severity = 'FAIL' then 1 else 0 end)
                 from quality_nonconformity nc
+                join growth_measurement gm on gm.measurement_id = nc.measurement_id
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and nc.occurred_at >= :startAt and nc.occurred_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
@@ -157,7 +182,13 @@ public class ReportSnapshotService {
                 from env_action_log al
                 join env_nonconformity nc on nc.env_nc_id = al.env_nc_id
                 join cultivation_batch b on b.batch_id = nc.batch_id
-                where al.action_at >= :startAt and al.action_at < :endAt
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
+                where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
+                  and al.action_at >= :startAt and al.action_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
         return intVal(row[0]);
@@ -168,8 +199,15 @@ public class ReportSnapshotService {
                 select count(*)
                 from quality_review_log qrl
                 join quality_evaluation qe on qe.quality_eval_id = qrl.quality_eval_id
+                join growth_measurement gm on gm.measurement_id = qe.measurement_id
                 join cultivation_batch b on b.batch_id = qe.batch_id
-                where qrl.review_at >= :startAt and qrl.review_at < :endAt
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
+                where coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
+                  and qrl.review_at >= :startAt and qrl.review_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
         return intVal(row[0]);
@@ -179,8 +217,15 @@ public class ReportSnapshotService {
         String sql = """
                 select count(*)
                 from quality_evaluation qe
+                join growth_measurement gm on gm.measurement_id = qe.measurement_id
                 join cultivation_batch b on b.batch_id = qe.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(qe.report_reflected_yn, 'N') = 'Y'
+                  and coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and qe.evaluated_at >= :startAt and qe.evaluated_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
@@ -192,7 +237,12 @@ public class ReportSnapshotService {
                 select coalesce(nc.item_name, nc.item_code, '-') as item_name, nc.severity, count(*) as cnt
                 from %s nc
                 join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
                 where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
                   and nc.%s >= :startAt and nc.%s < :endAt
                 %s
                 group by coalesce(nc.item_name, nc.item_code, '-'), nc.severity

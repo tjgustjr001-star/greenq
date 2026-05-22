@@ -7,6 +7,7 @@ import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { labelOf } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
+import { getCurrentUser } from "../../utils/auth.js";
 
 const statusOrder = ["NORMAL", "CAUTION", "FAIL", "MISSING", "SKIPPED"];
 
@@ -20,6 +21,7 @@ function countByStatus(rows) {
 
 export default function QualityPage() {
   const navigate = useNavigate();
+  const isAdmin = (getCurrentUser().role || getCurrentUser().roleCode) === "ADMIN";
   const [searchParams, setSearchParams] = useSearchParams();
   const batchId = searchParams.get("batchId") || "";
   const status = searchParams.get("status") || "";
@@ -87,7 +89,7 @@ export default function QualityPage() {
                 <td>{m.measuredAt}</td>
                 <td><button className="link-cell" onClick={() => navigate(`/quality/${m.measurementId}`)}><strong>{m.zoneName || "-"}</strong><br /><small>{m.batchName}</small></button></td>
                 <td>{m.cropName || "-"}</td><td>{m.sampleCount}</td><td>{m.plantHeight ?? "-"}</td><td>{m.leafWidth ?? "-"}</td><td>{m.leafLength ?? "-"}</td><td>{m.freshWeight ?? "-"}</td><td><StatusBadge value={m.qualityStatus} /></td>
-                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/quality/${m.measurementId}`) }, { label: "삭제", kind: "delete", danger: true, onClick: () => deleteMeasurement(m) }]} /></td>
+                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/quality/${m.measurementId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => deleteMeasurement(m) }]} /></td>
               </tr>
             ))}
             {measurements.length === 0 && <tr><td colSpan={10} className="empty-table-cell">조회 조건에 맞는 실측 데이터가 없습니다.</td></tr>}

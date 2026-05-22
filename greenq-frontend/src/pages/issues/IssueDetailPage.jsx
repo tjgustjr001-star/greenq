@@ -17,6 +17,7 @@ export default function IssueDetailPage() {
   const { issueType, issueId } = useParams();
   const navigate = useNavigate();
   const user = getCurrentUser();
+  const isAdmin = (user.role || user.roleCode) === "ADMIN";
   const type = normalizeType(issueType);
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -84,7 +85,7 @@ export default function IssueDetailPage() {
         eyebrow="Nonconformity Detail"
         title={`${issue.zoneName} · ${issue.itemName}`}
         description="DB에 저장된 부적합 상세와 조치/검토 이력을 확인합니다."
-        actions={<><button className="secondary-button" onClick={() => navigate("/issues")}>목록으로</button>{type === "env" && <button className="primary-button" onClick={() => setActionModalOpen(true)}><Plus size={16} />조치 메모</button>}{type === "quality" && <button className="primary-button" onClick={() => setReviewModalOpen(true)}><Plus size={16} />검토 메모</button>}<button className="danger-button" onClick={deleteIssue}>삭제</button></>}
+        actions={<><button className="secondary-button" onClick={() => navigate("/issues")}>목록으로</button>{type === "env" && <button className="primary-button" onClick={() => setActionModalOpen(true)}><Plus size={16} />조치 메모</button>}{type === "quality" && <button className="primary-button" onClick={() => setReviewModalOpen(true)}><Plus size={16} />검토 메모</button>}{isAdmin && <button className="danger-button" onClick={deleteIssue}>삭제</button>}</>}
       />
 
       <div className="panel detail-hero">

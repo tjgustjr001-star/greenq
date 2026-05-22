@@ -8,6 +8,7 @@ import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { labelOf } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
+import { getCurrentUser } from "../../utils/auth.js";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -63,6 +64,7 @@ function hasRequiredTarget(form) {
 
 export default function ReportListPage() {
   const navigate = useNavigate();
+  const isAdmin = (getCurrentUser().role || getCurrentUser().roleCode) === "ADMIN";
   const [searchParams] = useSearchParams();
   const batchId = searchParams.get("batchId");
   const { data, loading, error, reload } = useApiData(async () => {
@@ -204,7 +206,7 @@ export default function ReportListPage() {
                 <td>v{report.reportVersion || 1}</td>
                 <td><StatusBadge value={report.reportStatus} /></td>
                 <td>{report.createdAt}</td>
-                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/reports/${report.reportId}`) }, { label: "삭제", kind: "delete", danger: true, onClick: () => deleteReport(report) }]} /></td>
+                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/reports/${report.reportId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => deleteReport(report) }]} /></td>
               </tr>
             ))}
           </tbody>
