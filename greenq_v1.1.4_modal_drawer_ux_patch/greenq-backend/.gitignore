@@ -1,8 +1,0 @@
-/build/
-target/
-.gradle/
-.idea/
-*.iml
-.env
-application-secret.yml
-.zip

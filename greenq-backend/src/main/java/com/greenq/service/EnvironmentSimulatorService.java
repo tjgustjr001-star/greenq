@@ -6,24 +6,33 @@ import com.greenq.repository.CultivationBatchRepository;
 import com.greenq.repository.EnvironmentLogRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @Transactional
 public class EnvironmentSimulatorService {
+    private static final Logger log = LoggerFactory.getLogger(EnvironmentSimulatorService.class);
+    private static final int MAX_CATCH_UP_SLOTS_PER_BATCH = 96;
+
     private final CultivationBatchRepository batchRepository;
     private final EnvironmentLogRepository environmentLogRepository;
     private final EnvironmentEvaluationService environmentEvaluationService;
@@ -41,9 +50,88 @@ public class EnvironmentSimulatorService {
         this.environmentEvaluationService = environmentEvaluationService;
     }
 
+    @EventListener(ApplicationReadyEvent.class)
+    public void catchUpOnApplicationReady() {
+        catchUpMissingSimulatorLogs("STARTUP");
+    }
+
     @Scheduled(cron = "0 0,30 * * * *", zone = "Asia/Seoul")
     public void runEveryThirtyMinutes() {
-        generateAt(false, null, currentHalfHourSlot(), true);
+        catchUpMissingSimulatorLogs("SCHEDULED");
+    }
+
+    /**
+     * 운영중 배치별 마지막 SIMULATOR 로그 이후의 30분 슬롯을 보충합니다.
+     * PC 절전, 서버 중단, DevTools 재시작 등으로 스케줄이 실행되지 못한 구간을 복구하기 위한 흐름입니다.
+     */
+    public Map<String, Object> catchUpMissingSimulatorLogs(String trigger) {
+        LocalDateTime targetSlot = currentHalfHourSlot();
+        List<CultivationBatch> targetBatches = findGrowingBatches(null);
+
+        int generatedSlots = 0;
+        int skippedExistingSlots = 0;
+        int cappedBatches = 0;
+        int generatedLogs = 0;
+        int evaluatedItems = 0;
+        int createdNonconformities = 0;
+        int updatedNonconformities = 0;
+        int resolvedNonconformities = 0;
+        List<Long> createdLogIds = new ArrayList<>();
+
+        for (CultivationBatch batch : targetBatches) {
+            LocalDateTime latestSlot = findLatestSimulatorMeasuredAt(batch.getBatchId());
+            LocalDateTime nextSlot = latestSlot == null ? targetSlot : nextHalfHourSlot(latestSlot);
+            if (nextSlot.isAfter(targetSlot)) {
+                continue;
+            }
+
+            int slotCount = countHalfHourSlots(nextSlot, targetSlot);
+            if (slotCount > MAX_CATCH_UP_SLOTS_PER_BATCH) {
+                cappedBatches++;
+                nextSlot = targetSlot.minusMinutes((long) (MAX_CATCH_UP_SLOTS_PER_BATCH - 1) * 30L);
+                nextSlot = alignToHalfHourFloor(nextSlot);
+            }
+
+            for (LocalDateTime slot = nextSlot; !slot.isAfter(targetSlot); slot = slot.plusMinutes(30)) {
+                if (existsSimulatorLogForSlot(batch.getBatchId(), slot)) {
+                    skippedExistingSlots++;
+                    continue;
+                }
+                Map<String, Object> result = generateAt(false, batch.getBatchId(), slot, true);
+                int logs = toInt(result.get("generatedLogs"));
+                if (logs > 0) {
+                    generatedSlots++;
+                    generatedLogs += logs;
+                    evaluatedItems += toInt(result.get("evaluatedItems"));
+                    createdNonconformities += toInt(result.get("createdNonconformities"));
+                    updatedNonconformities += toInt(result.get("updatedNonconformities"));
+                    resolvedNonconformities += toInt(result.get("resolvedNonconformities"));
+                    Object ids = result.get("createdLogIds");
+                    if (ids instanceof List<?> list) {
+                        for (Object id : list) {
+                            if (id instanceof Number number) createdLogIds.add(number.longValue());
+                        }
+                    }
+                }
+            }
+        }
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("trigger", trigger == null ? "UNKNOWN" : trigger);
+        summary.put("targetSlot", targetSlot);
+        summary.put("targetBatches", targetBatches.size());
+        summary.put("generatedSlots", generatedSlots);
+        summary.put("generatedLogs", generatedLogs);
+        summary.put("evaluatedItems", evaluatedItems);
+        summary.put("createdNonconformities", createdNonconformities);
+        summary.put("updatedNonconformities", updatedNonconformities);
+        summary.put("resolvedNonconformities", resolvedNonconformities);
+        summary.put("skippedExistingSlots", skippedExistingSlots);
+        summary.put("cappedBatches", cappedBatches);
+        summary.put("createdLogIds", createdLogIds);
+
+        log.info("GreenQ environment simulator catch-up completed: {}", summary);
+        return summary;
     }
 
     public Map<String, Object> generate(boolean forceAbnormal, Long batchId) {
@@ -54,12 +142,7 @@ public class EnvironmentSimulatorService {
         LocalDateTime now = normalizeMeasuredAt(measuredAt, fixedSlot);
         LocalDateTime createdAt = LocalDateTime.now().withNano(0);
         String dataSource = fixedSlot ? "SIMULATOR" : "SIMULATOR_TEST";
-        List<CultivationBatch> targetBatches = batchRepository.findAll().stream()
-                .filter(batch -> !"Y".equalsIgnoreCase(nvl(batch.getDeleteYn(), "N")))
-                .filter(batch -> "GROWING".equalsIgnoreCase(nvl(batch.getBatchStatus(), "")))
-                .filter(batch -> batchId == null || Objects.equals(batch.getBatchId(), batchId))
-                .sorted(Comparator.comparing(CultivationBatch::getBatchId))
-                .toList();
+        List<CultivationBatch> targetBatches = findGrowingBatches(batchId);
 
         int logCount = 0;
         int ncCreatedCount = 0;
@@ -160,6 +243,51 @@ public class EnvironmentSimulatorService {
         return count.longValue() > 0;
     }
 
+    private List<CultivationBatch> findGrowingBatches(Long batchId) {
+        return batchRepository.findAll().stream()
+                .filter(batch -> !"Y".equalsIgnoreCase(nvl(batch.getDeleteYn(), "N")))
+                .filter(batch -> "GROWING".equalsIgnoreCase(nvl(batch.getBatchStatus(), "")))
+                .filter(batch -> batchId == null || Objects.equals(batch.getBatchId(), batchId))
+                .sorted(Comparator.comparing(CultivationBatch::getBatchId))
+                .toList();
+    }
+
+    private LocalDateTime findLatestSimulatorMeasuredAt(Long batchId) {
+        Object result = em.createNativeQuery("""
+                select max(measured_at)
+                from environment_log
+                where batch_id = :batchId
+                  and data_source = 'SIMULATOR'
+                  and coalesce(delete_yn, 'N') <> 'Y'
+                """)
+                .setParameter("batchId", batchId)
+                .getSingleResult();
+        return toLocalDateTime(result);
+    }
+
+    private LocalDateTime nextHalfHourSlot(LocalDateTime measuredAt) {
+        return alignToHalfHourFloor(measuredAt).plusMinutes(30);
+    }
+
+    private LocalDateTime alignToHalfHourFloor(LocalDateTime value) {
+        LocalDateTime base = (value == null ? LocalDateTime.now() : value).withSecond(0).withNano(0);
+        int minute = base.getMinute() < 30 ? 0 : 30;
+        return base.withMinute(minute);
+    }
+
+    private int countHalfHourSlots(LocalDateTime fromInclusive, LocalDateTime toInclusive) {
+        if (fromInclusive == null || toInclusive == null || fromInclusive.isAfter(toInclusive)) return 0;
+        long minutes = java.time.Duration.between(fromInclusive, toInclusive).toMinutes();
+        return (int) (minutes / 30L) + 1;
+    }
+
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value == null) return null;
+        if (value instanceof LocalDateTime localDateTime) return localDateTime.withSecond(0).withNano(0);
+        if (value instanceof Timestamp timestamp) return timestamp.toLocalDateTime().withSecond(0).withNano(0);
+        return LocalDateTime.parse(value.toString().replace(' ', 'T')).withSecond(0).withNano(0);
+    }
+
     private String pickAbnormalCode(List<EnvironmentEvaluationService.StandardSnapshot> standards, int batchIndex) {
         List<String> priority = List.of("TEMP", "HUMIDITY", "EC", "PH");
         for (int i = 0; i < priority.size(); i++) {
@@ -220,6 +348,16 @@ public class EnvironmentSimulatorService {
 
     private static String nvl(String value, String defaultValue) {
         return value == null || value.isBlank() ? defaultValue : value;
+    }
+
+    private static int toInt(Object value) {
+        if (value instanceof Number number) return number.intValue();
+        if (value == null) return 0;
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private static BigDecimal bd(String value) {

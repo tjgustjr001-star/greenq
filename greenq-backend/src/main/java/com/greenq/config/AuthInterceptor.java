@@ -90,7 +90,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (path.equals("/api/measurement-items") || path.startsWith("/api/measurement-items/")) return true;
         if (path.equals("/api/deleted-data") || path.startsWith("/api/deleted-data/")) return true;
         if (path.equals("/api/reports") || path.startsWith("/api/reports/")) return true;
-        if (path.equals("/api/environment-simulator/run")) return true;
+        if (path.equals("/api/environment-simulator/run") || path.equals("/api/environment-simulator/catch-up")) return true;
         if (path.matches("^/api/crops/\\d+$") || path.startsWith("/api/crops/") || (path.equals("/api/crops") && !"GET".equalsIgnoreCase(method))) return true;
         if (path.matches("^/api/zones/\\d+$") || path.startsWith("/api/zones/") || (path.equals("/api/zones") && !"GET".equalsIgnoreCase(method))) return true;
         if (path.matches("^/api/batches/\\d+$") || path.startsWith("/api/batches/") || (path.equals("/api/batches") && !"GET".equalsIgnoreCase(method))) return true;

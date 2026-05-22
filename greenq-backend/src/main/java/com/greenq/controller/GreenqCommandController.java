@@ -127,6 +127,11 @@ public class GreenqCommandController {
         return ApiResponse.ok("환경 시뮬레이터 데이터가 생성되었습니다.", environmentSimulatorService.generate(forceAbnormal, batchId));
     }
 
+    @PostMapping("/environment-simulator/catch-up")
+    public ApiResponse<?> catchUpEnvironmentSimulator() {
+        return ApiResponse.ok("누락된 환경 시뮬레이터 데이터 보충을 실행했습니다.", environmentSimulatorService.catchUpMissingSimulatorLogs("MANUAL"));
+    }
+
 
     @PutMapping("/env-alerts/{alertId}/read")
     public ApiResponse<?> markEnvAlertRead(@PathVariable Long alertId, @RequestBody(required = false) Map<String, Object> request) {
