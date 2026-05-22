@@ -10,7 +10,15 @@ import { cropTypeLabels } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
 
-const initialForm = { cropId: null, cropName: "", varietyName: "", cropType: "LEAFY", cropStatus: "ACTIVE", description: "" };
+const initialForm = {
+  cropId: null,
+  cropName: "",
+  varietyName: "",
+  cropType: "LEAFY",
+  cropStatus: "ACTIVE",
+  description: "",
+  standardPresetCode: "NONE",
+};
 const toForm = (crop) => ({
   cropId: crop.cropId,
   cropName: crop.cropName || "",
@@ -18,6 +26,7 @@ const toForm = (crop) => ({
   cropType: crop.cropType || "LEAFY",
   cropStatus: crop.cropStatus || "ACTIVE",
   description: crop.description || "",
+  standardPresetCode: "NONE",
 });
 
 export default function CropListPage() {
@@ -29,11 +38,12 @@ export default function CropListPage() {
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [pageNotice, setPageNotice] = useState("");
   const isEdit = Boolean(form.cropId);
 
   const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-  const startCreate = () => { setForm(initialForm); setFormError(""); setModalOpen(true); };
-  const startEdit = (crop) => { setForm(toForm(crop)); setFormError(""); setModalOpen(true); };
+  const startCreate = () => { setForm(initialForm); setFormError(""); setPageNotice(""); setModalOpen(true); };
+  const startEdit = (crop) => { setForm(toForm(crop)); setFormError(""); setPageNotice(""); setModalOpen(true); };
   const closeModal = () => {
     if (saving) return;
     setForm(initialForm);
@@ -56,9 +66,13 @@ export default function CropListPage() {
         cropName: form.cropName.trim(),
         varietyName: form.varietyName.trim(),
         description: form.description.trim(),
+        standardPresetCode: isEdit ? "NONE" : form.standardPresetCode,
       };
-      if (isEdit) await greenqApi.updateCrop(form.cropId, payload);
-      else await greenqApi.createCrop(payload);
+      const result = isEdit
+        ? await greenqApi.updateCrop(form.cropId, payload)
+        : await greenqApi.createCrop(payload);
+      const presetMessage = result?.standardPreset?.message;
+      setPageNotice(presetMessage || (isEdit ? "작물 정보가 수정되었습니다." : "작물이 등록되었습니다."));
       closeModal();
       await reload();
     } catch (err) {
@@ -85,6 +99,7 @@ export default function CropListPage() {
         actions={isAdmin ? <button className="primary-button" onClick={startCreate}><Plus size={16} />작물 등록</button> : null}
       />
       {!isAdmin && <div className="notice-box">작업자는 작물과 기준값을 조회할 수 있습니다.</div>}
+      {pageNotice && <div className="notice-box success-box">{pageNotice}</div>}
       {error && <div className="notice-box">{error}</div>}
 
       <Modal
@@ -101,6 +116,15 @@ export default function CropListPage() {
           <label>작물 유형<select value={form.cropType} onChange={(e) => updateForm("cropType", e.target.value)}><option value="LEAFY">엽채류</option><option value="FRUIT">과채류</option><option value="HERB">허브류</option><option value="ETC">기타</option></select></label>
           <label>상태<select value={form.cropStatus} onChange={(e) => updateForm("cropStatus", e.target.value)}><option value="ACTIVE">활성</option><option value="INACTIVE">비활성</option></select></label>
           <label className="wide-field">설명<input value={form.description} onChange={(e) => updateForm("description", e.target.value)} placeholder="작물 설명" /></label>
+          {!isEdit && (
+            <label className="wide-field">기준값 샘플
+              <select value={form.standardPresetCode} onChange={(e) => updateForm("standardPresetCode", e.target.value)}>
+                <option value="NONE">적용 안 함</option>
+                <option value="LETTUCE_SAMPLE">상추 샘플 기준 적용</option>
+              </select>
+              <span className="field-help">샘플을 선택하면 작물 등록 후 환경 기준과 품질 기준이 자동 생성됩니다. 생성된 기준은 작물 상세 화면에서 수정할 수 있습니다.</span>
+            </label>
+          )}
         </div>
       </Modal>
 

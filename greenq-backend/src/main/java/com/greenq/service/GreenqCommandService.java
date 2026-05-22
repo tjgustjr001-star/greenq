@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -75,7 +76,7 @@ public class GreenqCommandService {
         this.reportSnapshotService = reportSnapshotService;
     }
 
-    public Crop saveCrop(Map<String, Object> req) {
+    public Map<String, Object> saveCrop(Map<String, Object> req) {
         Crop crop = id(req, "cropId") == null ? new Crop() : cropRepository.findById(id(req, "cropId")).orElse(new Crop());
         LocalDateTime now = LocalDateTime.now().withNano(0);
         boolean isNew = crop.getCropId() == null;
@@ -88,7 +89,192 @@ public class GreenqCommandService {
         crop.setDeletedAt(null);
         if (isNew || crop.getCreatedAt() == null) crop.setCreatedAt(now);
         crop.setUpdatedAt(now);
-        return cropRepository.save(crop);
+
+        Crop saved = cropRepository.save(crop);
+        em.flush();
+
+        String presetCode = def(str(req, "standardPresetCode"), "NONE").trim().toUpperCase();
+        Map<String, Object> presetResult = Map.of(
+                "applied", false,
+                "presetCode", presetCode,
+                "message", "기준값 샘플을 적용하지 않았습니다."
+        );
+        if (isNew && "LETTUCE_SAMPLE".equals(presetCode)) {
+            presetResult = createLettuceStandardPreset(saved, now);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("cropId", saved.getCropId());
+        result.put("cropName", saved.getCropName());
+        result.put("varietyName", saved.getVarietyName());
+        result.put("cropType", saved.getCropType());
+        result.put("cropStatus", saved.getCropStatus());
+        result.put("description", saved.getDescription());
+        result.put("standardPreset", presetResult);
+        return result;
+    }
+
+    private Map<String, Object> createLettuceStandardPreset(Crop crop, LocalDateTime now) {
+        Long cropId = crop.getCropId();
+        boolean envExists = hasActiveStandardSet(cropId, "ENV");
+        boolean qualityExists = hasActiveStandardSet(cropId, "QUALITY");
+        int envCount = 0;
+        int qualityCount = 0;
+        Long envSetId = null;
+        Long qualitySetId = null;
+
+        if (!envExists) {
+            envSetId = insertStandardSet(cropId, "ENV", crop.getCropName() + " 환경 기준 샘플", now);
+            envCount = insertLettuceEnvItems(envSetId, now);
+        }
+        if (!qualityExists) {
+            qualitySetId = insertStandardSet(cropId, "QUALITY", crop.getCropName() + " 품질 기준 샘플", now);
+            qualityCount = insertLettuceQualityItems(qualitySetId, now);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("applied", envCount + qualityCount > 0);
+        result.put("presetCode", "LETTUCE_SAMPLE");
+        result.put("envCreated", !envExists);
+        result.put("qualityCreated", !qualityExists);
+        result.put("envStandardSetId", envSetId);
+        result.put("qualityStandardSetId", qualitySetId);
+        result.put("envItemCount", envCount);
+        result.put("qualityItemCount", qualityCount);
+        if (envExists && qualityExists) {
+            result.put("message", "이미 활성 환경/품질 기준이 있어 샘플 기준을 중복 생성하지 않았습니다.");
+        } else {
+            result.put("message", "상추 샘플 기준이 생성되었습니다. 환경 " + envCount + "개, 품질 " + qualityCount + "개 항목을 추가했습니다.");
+        }
+        return result;
+    }
+
+    private boolean hasActiveStandardSet(Long cropId, String standardType) {
+        Number count = (Number) em.createNativeQuery("""
+                select count(*) from standard_set
+                where crop_id = :cropId
+                  and standard_type = :standardType
+                  and standard_status = 'ACTIVE'
+                  and coalesce(delete_yn, 'N') <> 'Y'
+                """)
+                .setParameter("cropId", cropId)
+                .setParameter("standardType", standardType)
+                .getSingleResult();
+        return count.longValue() > 0;
+    }
+
+    private Long insertStandardSet(Long cropId, String standardType, String standardName, LocalDateTime now) {
+        em.createNativeQuery("""
+                insert into standard_set
+                (crop_id, standard_type, standard_name, standard_status, effective_start_date, effective_end_date, delete_yn, created_at, updated_at)
+                values (:cropId, :standardType, :standardName, 'ACTIVE', :startDate, null, 'N', :now, :now)
+                """)
+                .setParameter("cropId", cropId)
+                .setParameter("standardType", standardType)
+                .setParameter("standardName", standardName)
+                .setParameter("startDate", LocalDate.now())
+                .setParameter("now", now)
+                .executeUpdate();
+        Number id = (Number) em.createNativeQuery("select last_insert_id()").getSingleResult();
+        return id.longValue();
+    }
+
+    private int insertLettuceEnvItems(Long standardSetId, LocalDateTime now) {
+        int sort = 1;
+        insertStandardItem(standardSetId, "TEMP", "온도", "AIR", "NUMBER", "℃", bd("18.00"), bd("24.00"), null, bd("10.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "HUMIDITY", "습도", "AIR", "NUMBER", "%", bd("60.00"), bd("75.00"), null, bd("12.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "CO2", "CO2", "AIR", "NUMBER", "ppm", bd("700.00"), bd("1000.00"), null, bd("15.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "VPD", "VPD", "AIR", "NUMBER", "kPa", bd("0.70"), bd("1.20"), null, bd("20.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "LIGHT_INTENSITY", "조도", "LIGHT", "NUMBER", "lux", bd("12000.00"), bd("18000.00"), null, bd("20.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "PHOTOPERIOD", "광주기", "LIGHT", "NUMBER", "hour", bd("14.00"), bd("18.00"), null, bd("15.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "LIGHT_WAVELENGTH", "광질/파장", "LIGHT", "TEXT", "nm", null, null, "450nm/660nm", null, "N", sort++, now);
+        insertStandardItem(standardSetId, "PH", "pH", "NUTRIENT", "NUMBER", "pH", bd("5.80"), bd("6.50"), null, bd("8.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "WATER_TEMP", "수온", "NUTRIENT", "NUMBER", "℃", bd("18.00"), bd("22.00"), null, bd("10.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "EC", "EC", "NUTRIENT", "NUMBER", "mS/cm", bd("1.20"), bd("1.80"), null, bd("12.00"), "Y", sort++, now);
+        return sort - 1;
+    }
+
+    private int insertLettuceQualityItems(Long standardSetId, LocalDateTime now) {
+        int sort = 1;
+        insertStandardItem(standardSetId, "PLANT_HEIGHT", "초장", "GROWTH", "NUMBER", "cm", bd("14.00"), bd("22.00"), null, bd("15.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "LEAF_WIDTH", "엽폭", "GROWTH", "NUMBER", "cm", bd("7.00"), bd("12.00"), null, bd("15.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "LEAF_LENGTH", "엽장", "GROWTH", "NUMBER", "cm", bd("10.00"), bd("18.00"), null, bd("15.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "FRESH_WEIGHT", "생체중", "GROWTH", "NUMBER", "g", bd("80.00"), bd("140.00"), null, bd("20.00"), "Y", sort++, now);
+        insertStandardItem(standardSetId, "LEAF_COLOR", "엽색", "QUALITY_TEXT", "TEXT", null, null, null, "진녹색", null, "Y", sort++, now);
+        insertStandardItem(standardSetId, "GROWTH_STAGE", "생장단계", "QUALITY_TEXT", "TEXT", null, null, null, "GROWING", null, "Y", sort++, now);
+        return sort - 1;
+    }
+
+    private void insertStandardItem(
+            Long standardSetId,
+            String itemCode,
+            String itemName,
+            String itemGroup,
+            String valueType,
+            String unit,
+            BigDecimal min,
+            BigDecimal max,
+            String expectedTextValue,
+            BigDecimal failRate,
+            String useYn,
+            int sortOrder,
+            LocalDateTime now
+    ) {
+        ensureMeasurementItemMaster(itemCode, itemName, itemGroup, valueType, unit, sortOrder, now);
+        em.createNativeQuery("""
+                insert into standard_item
+                (standard_set_id, item_code, item_name, item_group, value_type, unit,
+                 standard_min, standard_max, expected_text_value, fail_rate, use_yn, sort_order, delete_yn, created_at, updated_at)
+                values (:standardSetId, :itemCode, :itemName, :itemGroup, :valueType, :unit,
+                        :min, :max, :expectedTextValue, :failRate, :useYn, :sortOrder, 'N', :now, :now)
+                """)
+                .setParameter("standardSetId", standardSetId)
+                .setParameter("itemCode", itemCode)
+                .setParameter("itemName", itemName)
+                .setParameter("itemGroup", itemGroup)
+                .setParameter("valueType", valueType)
+                .setParameter("unit", unit)
+                .setParameter("min", min)
+                .setParameter("max", max)
+                .setParameter("expectedTextValue", expectedTextValue)
+                .setParameter("failRate", failRate)
+                .setParameter("useYn", useYn)
+                .setParameter("sortOrder", sortOrder)
+                .setParameter("now", now)
+                .executeUpdate();
+    }
+
+    private void ensureMeasurementItemMaster(
+            String itemCode,
+            String itemName,
+            String itemGroup,
+            String valueType,
+            String unit,
+            int sortOrder,
+            LocalDateTime now
+    ) {
+        String standardType = "QUALITY_TEXT".equalsIgnoreCase(itemGroup) || "GROWTH".equalsIgnoreCase(itemGroup) ? "QUALITY" : "ENV";
+        em.createNativeQuery("""
+                insert into measurement_item_master
+                (item_code, item_name, standard_type, item_group, value_type, unit, default_use_yn, use_yn, sort_order, created_at, updated_at)
+                values (:itemCode, :itemName, :standardType, :itemGroup, :valueType, :unit, 'Y', 'Y', :sortOrder, :now, :now)
+                on duplicate key update
+                    item_name = values(item_name),
+                    standard_type = values(standard_type),
+                    item_group = values(item_group),
+                    value_type = values(value_type),
+                    unit = values(unit),
+                    updated_at = values(updated_at)
+                """)
+                .setParameter("itemCode", itemCode)
+                .setParameter("itemName", itemName)
+                .setParameter("standardType", standardType)
+                .setParameter("itemGroup", itemGroup)
+                .setParameter("valueType", valueType)
+                .setParameter("unit", unit)
+                .setParameter("sortOrder", sortOrder)
+                .setParameter("now", now)
+                .executeUpdate();
     }
 
     public void softDeleteCrop(Long id) {
@@ -534,6 +720,7 @@ public class GreenqCommandService {
     private static Long defId(Long value, Long def) { return value == null ? def : value; }
     private static String str(Map<String, Object> req, String key) { Object v = req.get(key); return v == null ? null : String.valueOf(v); }
     private static String def(String value, String def) { return value == null || value.isBlank() ? def : value; }
+    private static BigDecimal bd(String value) { return value == null ? null : new BigDecimal(value); }
     private static String normalizeJudgmentStatus(String value, String defaultValue) {
         if (value == null || value.isBlank()) return defaultValue;
         return switch (value.trim().toUpperCase()) {
