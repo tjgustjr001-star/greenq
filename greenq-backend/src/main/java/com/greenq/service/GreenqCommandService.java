@@ -77,12 +77,17 @@ public class GreenqCommandService {
 
     public Crop saveCrop(Map<String, Object> req) {
         Crop crop = id(req, "cropId") == null ? new Crop() : cropRepository.findById(id(req, "cropId")).orElse(new Crop());
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        boolean isNew = crop.getCropId() == null;
         crop.setCropName(str(req, "cropName"));
         crop.setVarietyName(str(req, "varietyName"));
         crop.setCropType(def(str(req, "cropType"), "LEAFY"));
         crop.setCropStatus(def(str(req, "cropStatus"), "ACTIVE"));
         crop.setDescription(str(req, "description"));
         crop.setDeleteYn("N");
+        crop.setDeletedAt(null);
+        if (isNew || crop.getCreatedAt() == null) crop.setCreatedAt(now);
+        crop.setUpdatedAt(now);
         return cropRepository.save(crop);
     }
 
@@ -94,12 +99,17 @@ public class GreenqCommandService {
 
     public Zone saveZone(Map<String, Object> req) {
         Zone zone = id(req, "zoneId") == null ? new Zone() : zoneRepository.findById(id(req, "zoneId")).orElse(new Zone());
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        boolean isNew = zone.getZoneId() == null;
         zone.setZoneName(str(req, "zoneName"));
         zone.setLocationDesc(str(req, "locationDesc"));
         zone.setAreaSize(dec(req, "areaSize"));
         zone.setZoneStatus(def(str(req, "zoneStatus"), "ACTIVE"));
         zone.setDescription(str(req, "description"));
         zone.setDeleteYn("N");
+        zone.setDeletedAt(null);
+        if (isNew || zone.getCreatedAt() == null) zone.setCreatedAt(now);
+        zone.setUpdatedAt(now);
         return zoneRepository.save(zone);
     }
 
@@ -128,6 +138,8 @@ public class GreenqCommandService {
 
     public CultivationBatch saveBatch(Map<String, Object> req) {
         CultivationBatch batch = id(req, "batchId") == null ? new CultivationBatch() : batchRepository.findById(id(req, "batchId")).orElse(new CultivationBatch());
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        boolean isNew = batch.getBatchId() == null;
         Long cropId = id(req, "cropId");
         Long zoneId = id(req, "zoneId");
         batch.setBatchName(str(req, "batchName"));
@@ -145,6 +157,9 @@ public class GreenqCommandService {
         if (batch.getEnvStandardSetId() == null) batch.setEnvStandardSetId(activeStandardSetId(cropId, "ENV"));
         if (batch.getQualityStandardSetId() == null) batch.setQualityStandardSetId(activeStandardSetId(cropId, "QUALITY"));
         batch.setDeleteYn("N");
+        batch.setDeletedAt(null);
+        if (isNew || batch.getCreatedAt() == null) batch.setCreatedAt(now);
+        batch.setUpdatedAt(now);
         return batchRepository.save(batch);
     }
 

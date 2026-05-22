@@ -27,25 +27,45 @@ export default function CropListPage() {
   const cropRows = asArray(data);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
   const isEdit = Boolean(form.cropId);
 
   const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-  const startCreate = () => { setForm(initialForm); setModalOpen(true); };
-  const startEdit = (crop) => { setForm(toForm(crop)); setModalOpen(true); };
-  const closeModal = () => { setForm(initialForm); setModalOpen(false); };
+  const startCreate = () => { setForm(initialForm); setFormError(""); setModalOpen(true); };
+  const startEdit = (crop) => { setForm(toForm(crop)); setFormError(""); setModalOpen(true); };
+  const closeModal = () => {
+    if (saving) return;
+    setForm(initialForm);
+    setFormError("");
+    setModalOpen(false);
+  };
 
   const saveCrop = async () => {
-    if (!form.cropName.trim()) return;
-    const payload = {
-      ...form,
-      cropName: form.cropName.trim(),
-      varietyName: form.varietyName.trim(),
-      description: form.description.trim(),
-    };
-    if (isEdit) await greenqApi.updateCrop(form.cropId, payload);
-    else await greenqApi.createCrop(payload);
-    closeModal();
-    await reload();
+    if (saving) return;
+    if (!form.cropName.trim()) {
+      setFormError("작물명을 입력해 주세요.");
+      return;
+    }
+
+    setSaving(true);
+    setFormError("");
+    try {
+      const payload = {
+        ...form,
+        cropName: form.cropName.trim(),
+        varietyName: form.varietyName.trim(),
+        description: form.description.trim(),
+      };
+      if (isEdit) await greenqApi.updateCrop(form.cropId, payload);
+      else await greenqApi.createCrop(payload);
+      closeModal();
+      await reload();
+    } catch (err) {
+      setFormError(err?.message || "작물 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteCrop = async (crop) => {
@@ -72,8 +92,9 @@ export default function CropListPage() {
         title={isEdit ? "작물 수정" : "작물 등록"}
         description="단순 작물 정보는 목록 화면 흐름을 유지하기 위해 모달에서 등록합니다."
         onClose={closeModal}
-        footer={<><button className="secondary-button" onClick={closeModal}>취소</button><button className="primary-button" onClick={saveCrop}>{isEdit ? "수정 저장" : "등록"}</button></>}
+        footer={<><button className="secondary-button" onClick={closeModal} disabled={saving}>취소</button><button className="primary-button" onClick={saveCrop} disabled={saving}>{saving ? "저장 중..." : isEdit ? "수정 저장" : "등록"}</button></>}
       >
+        {formError && <div className="notice-box form-error-box">{formError}</div>}
         <div className="form-grid modal-form-grid">
           <label>작물명<input value={form.cropName} onChange={(e) => updateForm("cropName", e.target.value)} placeholder="예: 상추" /></label>
           <label>품종명<input value={form.varietyName} onChange={(e) => updateForm("varietyName", e.target.value)} placeholder="예: 청치마" /></label>
