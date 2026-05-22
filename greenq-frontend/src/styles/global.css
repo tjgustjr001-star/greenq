@@ -3155,3 +3155,246 @@ td:last-child {
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* v1.1.18 report visualization updates */
+.report-visual-panel {
+  min-height: 0;
+}
+
+.report-visual-grid {
+  align-items: stretch;
+  margin-bottom: 18px;
+}
+
+.report-trend-panel {
+  margin-bottom: 18px;
+}
+
+.report-mini-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.report-mini-chart-card {
+  border: 1px solid rgba(31, 47, 40, 0.08);
+  border-radius: 18px;
+  background: rgba(250, 252, 250, 0.92);
+  padding: 14px 14px 12px;
+  min-height: 190px;
+}
+
+.report-mini-chart-head,
+.report-mini-chart-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.report-mini-chart-head strong {
+  font-size: 15px;
+  color: var(--text-main);
+}
+
+.report-mini-chart-head span {
+  font-size: 18px;
+  color: var(--primary-dark);
+  font-weight: 900;
+}
+
+.report-mini-line-chart {
+  width: 100%;
+  height: 110px;
+  margin: 10px 0 4px;
+  overflow: visible;
+}
+
+.report-mini-line-chart line {
+  stroke: rgba(31, 47, 40, 0.08);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.report-mini-line-chart polyline {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.report-mini-chart-foot span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.report-status-bar {
+  display: flex;
+  width: 100%;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(31, 47, 40, 0.06);
+  margin: 14px 0 18px;
+}
+
+.report-status-segment {
+  display: block;
+  min-width: 6px;
+  height: 100%;
+}
+
+.report-status-segment.normal,
+.report-status-dot.normal {
+  background: rgba(75, 145, 94, 0.85);
+}
+
+.report-status-segment.caution,
+.report-status-dot.caution {
+  background: rgba(222, 169, 69, 0.88);
+}
+
+.report-status-segment.fail,
+.report-status-dot.fail {
+  background: rgba(206, 87, 77, 0.88);
+}
+
+.report-status-segment.missing,
+.report-status-dot.missing {
+  background: rgba(83, 127, 190, 0.78);
+}
+
+.report-status-segment.skipped,
+.report-status-dot.skipped {
+  background: rgba(127, 145, 133, 0.62);
+}
+
+.report-status-list {
+  display: grid;
+  gap: 10px;
+}
+
+.report-status-list > div {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.report-status-list strong {
+  font-size: 13px;
+}
+
+.report-status-list small {
+  color: var(--text-muted);
+  font-weight: 800;
+  min-width: 48px;
+  text-align: right;
+}
+
+.report-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+
+.report-top-nc-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.report-top-nc-row {
+  display: grid;
+  gap: 8px;
+}
+
+.report-top-nc-info {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-top-nc-info > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  background: rgba(69, 132, 86, 0.12);
+  color: var(--primary-dark);
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.report-top-nc-info strong {
+  display: block;
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.report-top-nc-info small,
+.report-top-nc-row p {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.report-top-nc-row p {
+  margin: 0;
+}
+
+.report-top-nc-meter {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(31, 47, 40, 0.06);
+  overflow: hidden;
+}
+
+.report-top-nc-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(69, 132, 86, 0.72), rgba(206, 87, 77, 0.68));
+}
+
+.report-empty-visual {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(31, 47, 40, 0.13);
+  border-radius: 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 800;
+  background: rgba(250, 252, 250, 0.72);
+}
+
+@media (max-width: 1200px) {
+  .report-mini-chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .report-mini-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-top-nc-info {
+    grid-template-columns: auto 1fr;
+  }
+
+  .report-top-nc-info .status-badge {
+    grid-column: 2;
+    width: max-content;
+  }
+}

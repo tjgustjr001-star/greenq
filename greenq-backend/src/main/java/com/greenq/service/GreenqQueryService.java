@@ -650,7 +650,183 @@ public class GreenqQueryService {
                 "envSummary", r.getEnvSummary(), "qualitySummary", r.getQualitySummary(),
                 "envNcSummary", r.getEnvNcSummary(), "qualityNcSummary", r.getQualityNcSummary(),
                 "guideSummary", r.getGuideSummary(), "generatedConditionJson", r.getGeneratedConditionJson(),
+                "environmentTrend", reportEnvironmentTrend(r),
+                "envStatusDistribution", reportEnvironmentStatusDistribution(r),
+                "qualityStatusDistribution", reportQualityStatusDistribution(r),
+                "envTopNonconformityItems", reportEnvTopNonconformityItems(r),
+                "qualityTopNonconformityItems", reportQualityTopNonconformityItems(r),
                 "reportStatus", r.getReportStatus(), "reportVersion", r.getReportVersion()
+        );
+    }
+
+    private List<Map<String, Object>> reportEnvironmentTrend(Report report) {
+        StringBuilder sql = new StringBuilder("""
+                select el.measured_at,
+                       round(avg(el.temperature), 2) as avg_temperature,
+                       round(avg(el.humidity), 2) as avg_humidity,
+                       round(avg(el.ph), 2) as avg_ph,
+                       round(avg(el.ec), 2) as avg_ec
+                from environment_log el
+                join cultivation_batch b on b.batch_id = el.batch_id
+                where coalesce(el.delete_yn, 'N') <> 'Y'
+                  and el.measured_at >= :startAt
+                  and el.measured_at < :endAt
+                """);
+        appendReportTargetFilter(sql, report, "el", "b");
+        sql.append(" group by el.measured_at order by el.measured_at asc, min(el.env_log_id) asc ");
+        var query = em.createNativeQuery(sql.toString());
+        bindReportTargetParams(query, report);
+        bindReportDateParams(query, report);
+        @SuppressWarnings("unchecked") List<Object[]> rows = query.getResultList();
+        return rows.stream().map(r -> mapOf(
+                "measuredAt", dtObj(r[0]),
+                "temperature", num(r[1]),
+                "humidity", num(r[2]),
+                "ph", num(r[3]),
+                "ec", num(r[4])
+        )).toList();
+    }
+
+    private List<Map<String, Object>> reportEnvironmentStatusDistribution(Report report) {
+        StringBuilder sql = new StringBuilder("""
+                select el.env_status, count(*)
+                from environment_log el
+                join cultivation_batch b on b.batch_id = el.batch_id
+                where coalesce(el.delete_yn, 'N') <> 'Y'
+                  and el.measured_at >= :startAt
+                  and el.measured_at < :endAt
+                """);
+        appendReportTargetFilter(sql, report, "el", "b");
+        sql.append(" group by el.env_status ");
+        var query = em.createNativeQuery(sql.toString());
+        bindReportTargetParams(query, report);
+        bindReportDateParams(query, report);
+        return normalizeStatusDistribution(query.getResultList());
+    }
+
+    private List<Map<String, Object>> reportQualityStatusDistribution(Report report) {
+        StringBuilder sql = new StringBuilder("""
+                select coalesce(gm.quality_status, 'MISSING') as quality_status, count(*)
+                from growth_measurement gm
+                join cultivation_batch b on b.batch_id = gm.batch_id
+                where coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and gm.measured_at >= :startAt
+                  and gm.measured_at < :endAt
+                """);
+        appendReportTargetFilter(sql, report, "gm", "b");
+        sql.append(" group by coalesce(gm.quality_status, 'MISSING') ");
+        var query = em.createNativeQuery(sql.toString());
+        bindReportTargetParams(query, report);
+        bindReportDateParams(query, report);
+        return normalizeStatusDistribution(query.getResultList());
+    }
+
+    private List<Map<String, Object>> reportEnvTopNonconformityItems(Report report) {
+        StringBuilder sql = new StringBuilder("""
+                select nc.item_code, nc.item_name,
+                       count(*) as total_count,
+                       sum(case when nc.severity = 'CAUTION' then 1 else 0 end) as caution_count,
+                       sum(case when nc.severity = 'FAIL' then 1 else 0 end) as fail_count,
+                       max(nc.deviation_rate) as max_deviation_rate
+                from env_nonconformity nc
+                join cultivation_batch b on b.batch_id = nc.batch_id
+                where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and nc.occurred_at >= :startAt
+                  and nc.occurred_at < :endAt
+                """);
+        appendReportTargetFilter(sql, report, "nc", "b");
+        sql.append("""
+                group by nc.item_code, nc.item_name
+                order by fail_count desc, caution_count desc, total_count desc, nc.item_name asc
+                limit 5
+                """);
+        var query = em.createNativeQuery(sql.toString());
+        bindReportTargetParams(query, report);
+        bindReportDateParams(query, report);
+        @SuppressWarnings("unchecked") List<Object[]> rows = query.getResultList();
+        return rows.stream().map(r -> topNcMap(r)).toList();
+    }
+
+    private List<Map<String, Object>> reportQualityTopNonconformityItems(Report report) {
+        StringBuilder sql = new StringBuilder("""
+                select nc.item_code, nc.item_name,
+                       count(*) as total_count,
+                       sum(case when nc.severity = 'CAUTION' then 1 else 0 end) as caution_count,
+                       sum(case when nc.severity = 'FAIL' then 1 else 0 end) as fail_count,
+                       max(nc.deviation_rate) as max_deviation_rate
+                from quality_nonconformity nc
+                join cultivation_batch b on b.batch_id = nc.batch_id
+                where coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and nc.occurred_at >= :startAt
+                  and nc.occurred_at < :endAt
+                """);
+        appendReportTargetFilter(sql, report, "nc", "b");
+        sql.append("""
+                group by nc.item_code, nc.item_name
+                order by fail_count desc, caution_count desc, total_count desc, nc.item_name asc
+                limit 5
+                """);
+        var query = em.createNativeQuery(sql.toString());
+        bindReportTargetParams(query, report);
+        bindReportDateParams(query, report);
+        @SuppressWarnings("unchecked") List<Object[]> rows = query.getResultList();
+        return rows.stream().map(r -> topNcMap(r)).toList();
+    }
+
+    private void appendReportTargetFilter(StringBuilder sql, Report report, String dataAlias, String batchAlias) {
+        if (report.getBatchId() != null) sql.append(" and ").append(dataAlias).append(".batch_id = :batchId ");
+        if (report.getZoneId() != null) sql.append(" and ").append(batchAlias).append(".zone_id = :zoneId ");
+        if (report.getCropId() != null) sql.append(" and ").append(batchAlias).append(".crop_id = :cropId ");
+    }
+
+    private void bindReportTargetParams(jakarta.persistence.Query query, Report report) {
+        if (report.getBatchId() != null) query.setParameter("batchId", report.getBatchId());
+        if (report.getZoneId() != null) query.setParameter("zoneId", report.getZoneId());
+        if (report.getCropId() != null) query.setParameter("cropId", report.getCropId());
+    }
+
+    private void bindReportDateParams(jakarta.persistence.Query query, Report report) {
+        LocalDate start = report.getStartDate() == null ? LocalDate.now() : report.getStartDate();
+        LocalDate end = report.getEndDate() == null ? start : report.getEndDate();
+        query.setParameter("startAt", start.atStartOfDay());
+        query.setParameter("endAt", end.plusDays(1).atStartOfDay());
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> normalizeStatusDistribution(List<?> rawRows) {
+        Map<String, Long> countMap = new LinkedHashMap<>();
+        countMap.put("NORMAL", 0L);
+        countMap.put("CAUTION", 0L);
+        countMap.put("FAIL", 0L);
+        countMap.put("MISSING", 0L);
+        countMap.put("SKIPPED", 0L);
+        for (Object raw : rawRows) {
+            Object[] row = (Object[]) raw;
+            String status = String.valueOf(row[0] == null ? "MISSING" : row[0]).toUpperCase(Locale.ROOT);
+            Number count = (Number) row[1];
+            if ("WARNING".equals(status)) status = "CAUTION";
+            if ("PASS".equals(status)) status = "NORMAL";
+            countMap.merge(status, count == null ? 0L : count.longValue(), Long::sum);
+        }
+        long total = countMap.values().stream().mapToLong(Long::longValue).sum();
+        return countMap.entrySet().stream().map(e -> mapOf(
+                "status", e.getKey(),
+                "count", e.getValue(),
+                "ratio", total == 0 ? 0 : Math.round((e.getValue() * 1000.0) / total) / 10.0
+        )).toList();
+    }
+
+    private Map<String, Object> topNcMap(Object[] r) {
+        long cautionCount = r[3] instanceof Number n1 ? n1.longValue() : 0L;
+        long failCount = r[4] instanceof Number n2 ? n2.longValue() : 0L;
+        return mapOf(
+                "itemCode", r[0],
+                "itemName", r[1],
+                "totalCount", r[2],
+                "cautionCount", cautionCount,
+                "failCount", failCount,
+                "maxSeverity", failCount > 0 ? "FAIL" : "CAUTION",
+                "maxDeviationRate", num(r[5])
         );
     }
 

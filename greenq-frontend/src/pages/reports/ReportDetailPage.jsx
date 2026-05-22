@@ -7,6 +7,22 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { labelOf } from "../../data/displayLabels.js";
 import { useApiData } from "../../hooks/useApiData.js";
 
+const STATUS_ORDER = ["NORMAL", "CAUTION", "FAIL", "MISSING", "SKIPPED"];
+const STATUS_LABELS = {
+  NORMAL: "정상",
+  CAUTION: "주의",
+  FAIL: "경고",
+  MISSING: "누락",
+  SKIPPED: "제외",
+};
+
+const TREND_METRICS = [
+  { key: "temperature", label: "온도", unit: "℃" },
+  { key: "humidity", label: "습도", unit: "%" },
+  { key: "ph", label: "pH", unit: "" },
+  { key: "ec", label: "EC", unit: "" },
+];
+
 function parseCondition(json) {
   if (!json) return null;
   try {
@@ -16,8 +32,180 @@ function parseCondition(json) {
   }
 }
 
+function asList(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function toNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function formatNumber(value, digit = 1) {
+  const number = toNumber(value);
+  if (number === null) return "-";
+  if (Number.isInteger(number)) return String(number);
+  return number.toFixed(digit).replace(/\.0$/, "");
+}
+
 function SummaryPanel({ title, children }) {
   return <div className="panel info-panel report-info-panel"><h3>{title}</h3><p>{children || "-"}</p></div>;
+}
+
+function MiniTrendChart({ rows, metric }) {
+  const points = asList(rows)
+    .map((row) => ({ time: new Date(row.measuredAt).getTime(), value: toNumber(row[metric.key]) }))
+    .filter((point) => Number.isFinite(point.time) && point.value !== null)
+    .sort((a, b) => a.time - b.time);
+
+  if (points.length === 0) {
+    return (
+      <div className="report-mini-chart-card">
+        <div className="report-mini-chart-head"><strong>{metric.label}</strong><span>-</span></div>
+        <div className="report-empty-visual">데이터 없음</div>
+      </div>
+    );
+  }
+
+  const values = points.map((point) => point.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const valueRange = maxValue - minValue || 1;
+  const minTime = Math.min(...points.map((point) => point.time));
+  const maxTime = Math.max(...points.map((point) => point.time));
+  const timeRange = maxTime - minTime || 1;
+  const chartTop = 12;
+  const chartBottom = 88;
+  const chartHeight = chartBottom - chartTop;
+  const latest = points[points.length - 1]?.value;
+  const svgPoints = points.map((point) => {
+    const x = points.length === 1 ? 50 : ((point.time - minTime) / timeRange) * 100;
+    const y = chartBottom - ((point.value - minValue) / valueRange) * chartHeight;
+    return `${x},${Math.min(chartBottom, Math.max(chartTop, y))}`;
+  }).join(" ");
+
+  return (
+    <div className="report-mini-chart-card">
+      <div className="report-mini-chart-head">
+        <strong>{metric.label}</strong>
+        <span>{formatNumber(latest)}{metric.unit}</span>
+      </div>
+      <svg className="report-mini-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={`${metric.label} 추이`}>
+        <line x1="0" y1={chartTop} x2="100" y2={chartTop} />
+        <line x1="0" y1="50" x2="100" y2="50" />
+        <line x1="0" y1={chartBottom} x2="100" y2={chartBottom} />
+        <polyline points={svgPoints} />
+      </svg>
+      <div className="report-mini-chart-foot">
+        <span>최저 {formatNumber(minValue)}{metric.unit}</span>
+        <span>최고 {formatNumber(maxValue)}{metric.unit}</span>
+      </div>
+    </div>
+  );
+}
+
+function ReportTrendPanel({ rows }) {
+  const trendRows = asList(rows);
+  return (
+    <div className="panel report-visual-panel report-trend-panel">
+      <div className="panel-head">
+        <h3>기간 내 환경 추이</h3>
+        <p>리포트 발급 조건에 해당하는 환경 로그를 시간순으로 요약한 차트입니다.</p>
+      </div>
+      {trendRows.length === 0 ? (
+        <div className="report-empty-visual">선택 기간의 환경 로그가 없습니다.</div>
+      ) : (
+        <div className="report-mini-chart-grid">
+          {TREND_METRICS.map((metric) => <MiniTrendChart key={metric.key} rows={trendRows} metric={metric} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusDistributionPanel({ title, rows }) {
+  const statusRows = STATUS_ORDER.map((status) => {
+    const found = asList(rows).find((row) => row.status === status);
+    return {
+      status,
+      label: STATUS_LABELS[status],
+      count: Number(found?.count ?? 0),
+      ratio: Number(found?.ratio ?? 0),
+    };
+  });
+  const total = statusRows.reduce((sum, row) => sum + row.count, 0);
+
+  return (
+    <div className="panel report-visual-panel">
+      <div className="panel-head compact">
+        <h3>{title}</h3>
+        <p>전체 {total}건 기준 상태 비율</p>
+      </div>
+      {total === 0 ? (
+        <div className="report-empty-visual">집계할 데이터가 없습니다.</div>
+      ) : (
+        <>
+          <div className="report-status-bar" aria-label={`${title} 상태 분포`}>
+            {statusRows.filter((row) => row.count > 0).map((row) => (
+              <span
+                key={row.status}
+                className={`report-status-segment ${row.status.toLowerCase()}`}
+                style={{ width: `${Math.max(row.ratio, 4)}%` }}
+                title={`${row.label} ${row.count}건 (${row.ratio}%)`}
+              />
+            ))}
+          </div>
+          <div className="report-status-list">
+            {statusRows.map((row) => (
+              <div key={row.status}>
+                <i className={`report-status-dot ${row.status.toLowerCase()}`} />
+                <span>{row.label}</span>
+                <strong>{row.count}건</strong>
+                <small>{formatNumber(row.ratio)}%</small>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TopNonconformityPanel({ title, rows }) {
+  const items = asList(rows);
+  const maxCount = Math.max(...items.map((item) => Number(item.totalCount ?? 0)), 1);
+  return (
+    <div className="panel report-visual-panel">
+      <div className="panel-head compact">
+        <h3>{title}</h3>
+        <p>주의/경고 발생 횟수 기준 TOP 항목</p>
+      </div>
+      {items.length === 0 ? (
+        <div className="report-empty-visual">선택 기간의 부적합 항목이 없습니다.</div>
+      ) : (
+        <div className="report-top-nc-list">
+          {items.map((item, index) => {
+            const total = Number(item.totalCount ?? 0);
+            const width = Math.max((total / maxCount) * 100, 8);
+            return (
+              <div key={`${item.itemCode}-${index}`} className="report-top-nc-row">
+                <div className="report-top-nc-info">
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{item.itemName || item.itemCode}</strong>
+                    <small>주의 {item.cautionCount ?? 0}건 · 경고 {item.failCount ?? 0}건</small>
+                  </div>
+                  <StatusBadge value={item.maxSeverity || "CAUTION"} />
+                </div>
+                <div className="report-top-nc-meter"><i style={{ width: `${width}%` }} /></div>
+                <p>총 {total}건{item.maxDeviationRate != null ? ` · 최대 이탈률 ${formatNumber(item.maxDeviationRate)}%` : ""}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ReportDetailPage() {
@@ -57,6 +245,15 @@ export default function ReportDetailPage() {
         <div className="report-kpi-card"><span>품질 실측</span><strong>{condition?.qualityTotal ?? "-"}</strong><small>정상 {condition?.qualityNormal ?? "-"} / 주의 {condition?.qualityCaution ?? "-"} / 경고 {condition?.qualityFail ?? "-"}</small></div>
         <div className="report-kpi-card"><span>환경 부적합</span><strong>{condition?.envNcTotal ?? "-"}</strong><small>조치 이력 {condition?.envActionTotal ?? "-"}건</small></div>
         <div className="report-kpi-card"><span>품질 부적합</span><strong>{condition?.qualityNcTotal ?? "-"}</strong><small>검토 {condition?.qualityReviewTotal ?? "-"}건 / 리포트 반영 {condition?.qualityReportReflectedTotal ?? "-"}건</small></div>
+      </section>
+
+      <ReportTrendPanel rows={report.environmentTrend} />
+
+      <section className="content-grid two report-visual-grid">
+        <StatusDistributionPanel title="환경 상태 분포" rows={report.envStatusDistribution} />
+        <StatusDistributionPanel title="품질 상태 분포" rows={report.qualityStatusDistribution} />
+        <TopNonconformityPanel title="환경 부적합 TOP 항목" rows={report.envTopNonconformityItems} />
+        <TopNonconformityPanel title="품질 부적합 TOP 항목" rows={report.qualityTopNonconformityItems} />
       </section>
 
       <section className="content-grid two">
