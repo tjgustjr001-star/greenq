@@ -79,15 +79,15 @@ export default function QualityPage() {
         {statusOrder.map((s) => <div className="stat-card" key={s}><p>{labelOf(s)}</p><strong>{counts[s] || 0}</strong><span>품질 판정</span></div>)}
       </section>
 
-      <div className="panel">
+      <div className="panel table-panel">
         <div className="panel-head"><div><h3>실측 데이터 조회</h3><p className="panel-desc">저장 완료 시 품질 평가와 품질 부적합이 자동 생성됩니다.</p></div></div>
-        <table>
+        <table className="data-table quality-list-table"><colgroup><col className="col-date" /><col className="col-batch" /><col className="col-item" /><col className="col-small" /><col className="col-value" /><col className="col-value" /><col className="col-value" /><col className="col-value" /><col className="col-status" /><col className="col-action" /></colgroup>
           <thead><tr><th>측정일시</th><th>구역/배치</th><th>작물</th><th>샘플</th><th>초장 평균</th><th>엽폭 평균</th><th>엽장 평균</th><th>생체중 평균</th><th>품질 상태</th><th>관리</th></tr></thead>
           <tbody>
             {measurements.map((m) => (
               <tr key={m.measurementId}>
                 <td>{m.measuredAt}</td>
-                <td><button className="link-cell" onClick={() => navigate(`/quality/${m.measurementId}`)}><strong>{m.zoneName || "-"}</strong><br /><small>{m.batchName}</small></button></td>
+                <td className="text-left"><button className="link-cell" onClick={() => navigate(`/quality/${m.measurementId}`)}><strong>{m.zoneName || "-"}</strong><br /><small>{m.batchName}</small></button></td>
                 <td>{m.cropName || "-"}</td><td>{m.sampleCount}</td><td>{m.plantHeight ?? "-"}</td><td>{m.leafWidth ?? "-"}</td><td>{m.leafLength ?? "-"}</td><td>{m.freshWeight ?? "-"}</td><td><StatusBadge value={m.qualityStatus} /></td>
                 <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/quality/${m.measurementId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => deleteMeasurement(m) }]} /></td>
               </tr>

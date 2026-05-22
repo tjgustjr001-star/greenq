@@ -53,32 +53,87 @@ function SummaryPanel({ title, children }) {
   return <div className="panel info-panel report-info-panel"><h3>{title}</h3><p>{children || "-"}</p></div>;
 }
 
-function MiniTrendChart({ rows, metric }) {
-  const points = asList(rows)
-    .map((row) => ({ time: new Date(row.measuredAt).getTime(), value: toNumber(row[metric.key]) }))
+function formatDateLabel(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "-";
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${mm}.${dd} ${hh}:${min}`;
+}
+
+function getMetricPoints(rows, metric) {
+  return asList(rows)
+    .map((row) => ({
+      time: new Date(row.measuredAt).getTime(),
+      measuredAt: row.measuredAt,
+      value: toNumber(row[metric.key]),
+    }))
     .filter((point) => Number.isFinite(point.time) && point.value !== null)
     .sort((a, b) => a.time - b.time);
+}
+
+function getMetricStats(points) {
+  if (points.length === 0) {
+    return { latest: null, average: null, min: null, max: null, firstAt: null, lastAt: null };
+  }
+  const values = points.map((point) => point.value);
+  return {
+    latest: points[points.length - 1].value,
+    average: values.reduce((sum, value) => sum + value, 0) / values.length,
+    min: Math.min(...values),
+    max: Math.max(...values),
+    firstAt: points[0].measuredAt,
+    lastAt: points[points.length - 1].measuredAt,
+  };
+}
+
+function TrendMetricSummary({ metric, rows }) {
+  const points = getMetricPoints(rows, metric);
+  const stats = getMetricStats(points);
+  return (
+    <div className="report-trend-summary-card">
+      <span>{metric.label}</span>
+      <strong>{formatNumber(stats.average)}{metric.unit}</strong>
+      <small>최저 {formatNumber(stats.min)}{metric.unit} · 최고 {formatNumber(stats.max)}{metric.unit}</small>
+    </div>
+  );
+}
+
+function ReportTrendChart({ rows, metric }) {
+  const points = getMetricPoints(rows, metric);
 
   if (points.length === 0) {
     return (
-      <div className="report-mini-chart-card">
-        <div className="report-mini-chart-head"><strong>{metric.label}</strong><span>-</span></div>
-        <div className="report-empty-visual">데이터 없음</div>
+      <div className="report-trend-chart-card">
+        <div className="report-trend-chart-head">
+          <div>
+            <strong>{metric.label}</strong>
+            <p>선택 기간 내 측정값 없음</p>
+          </div>
+          <span>-</span>
+        </div>
+        <div className="report-empty-visual compact">데이터 없음</div>
       </div>
     );
   }
 
-  const values = points.map((point) => point.value);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
+  const stats = getMetricStats(points);
+  const rawMin = stats.min;
+  const rawMax = stats.max;
+  const valuePadding = Math.max((rawMax - rawMin) * 0.16, metric.key === "ph" ? 0.15 : metric.key === "ec" ? 0.12 : 1);
+  const minValue = rawMin - valuePadding;
+  const maxValue = rawMax + valuePadding;
   const valueRange = maxValue - minValue || 1;
   const minTime = Math.min(...points.map((point) => point.time));
   const maxTime = Math.max(...points.map((point) => point.time));
   const timeRange = maxTime - minTime || 1;
-  const chartTop = 12;
-  const chartBottom = 88;
+  const chartTop = 18;
+  const chartBottom = 142;
   const chartHeight = chartBottom - chartTop;
-  const latest = points[points.length - 1]?.value;
+  const midValue = (minValue + maxValue) / 2;
   const svgPoints = points.map((point) => {
     const x = points.length === 1 ? 50 : ((point.time - minTime) / timeRange) * 100;
     const y = chartBottom - ((point.value - minValue) / valueRange) * chartHeight;
@@ -86,20 +141,31 @@ function MiniTrendChart({ rows, metric }) {
   }).join(" ");
 
   return (
-    <div className="report-mini-chart-card">
-      <div className="report-mini-chart-head">
-        <strong>{metric.label}</strong>
-        <span>{formatNumber(latest)}{metric.unit}</span>
+    <div className="report-trend-chart-card">
+      <div className="report-trend-chart-head">
+        <div>
+          <strong>{metric.label}</strong>
+          <p>{formatDateLabel(stats.firstAt)} ~ {formatDateLabel(stats.lastAt)}</p>
+        </div>
+        <span>평균 {formatNumber(stats.average)}{metric.unit}</span>
       </div>
-      <svg className="report-mini-line-chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={`${metric.label} 추이`}>
-        <line x1="0" y1={chartTop} x2="100" y2={chartTop} />
-        <line x1="0" y1="50" x2="100" y2="50" />
-        <line x1="0" y1={chartBottom} x2="100" y2={chartBottom} />
-        <polyline points={svgPoints} />
-      </svg>
-      <div className="report-mini-chart-foot">
-        <span>최저 {formatNumber(minValue)}{metric.unit}</span>
-        <span>최고 {formatNumber(maxValue)}{metric.unit}</span>
+      <div className="report-trend-chart-plot">
+        <div className="report-trend-y-scale" aria-hidden="true">
+          <span>{formatNumber(maxValue)}{metric.unit}</span>
+          <span>{formatNumber(midValue)}{metric.unit}</span>
+          <span>{formatNumber(minValue)}{metric.unit}</span>
+        </div>
+        <svg className="report-trend-line-chart" viewBox="0 0 100 160" preserveAspectRatio="none" aria-label={`${metric.label} 기간 추이`}>
+          <line x1="0" y1={chartTop} x2="100" y2={chartTop} />
+          <line x1="0" y1="80" x2="100" y2="80" />
+          <line x1="0" y1={chartBottom} x2="100" y2={chartBottom} />
+          <polyline points={svgPoints} />
+        </svg>
+      </div>
+      <div className="report-trend-chart-foot">
+        <span>최저 {formatNumber(rawMin)}{metric.unit}</span>
+        <span>최고 {formatNumber(rawMax)}{metric.unit}</span>
+        <span>최근 {formatNumber(stats.latest)}{metric.unit}</span>
       </div>
     </div>
   );
@@ -109,16 +175,24 @@ function ReportTrendPanel({ rows }) {
   const trendRows = asList(rows);
   return (
     <div className="panel report-visual-panel report-trend-panel">
-      <div className="panel-head">
-        <h3>기간 내 환경 추이</h3>
-        <p>리포트 발급 조건에 해당하는 환경 로그를 시간순으로 요약한 차트입니다.</p>
+      <div className="panel-head report-trend-head">
+        <div>
+          <h3>기간 내 환경 추이</h3>
+          <p>리포트 발급 조건에 해당하는 환경 로그를 평균·최저·최고와 함께 비교합니다.</p>
+        </div>
+        <span>{trendRows.length}건 기준</span>
       </div>
       {trendRows.length === 0 ? (
         <div className="report-empty-visual">선택 기간의 환경 로그가 없습니다.</div>
       ) : (
-        <div className="report-mini-chart-grid">
-          {TREND_METRICS.map((metric) => <MiniTrendChart key={metric.key} rows={trendRows} metric={metric} />)}
-        </div>
+        <>
+          <div className="report-trend-summary-grid">
+            {TREND_METRICS.map((metric) => <TrendMetricSummary key={metric.key} metric={metric} rows={trendRows} />)}
+          </div>
+          <div className="report-trend-chart-grid">
+            {TREND_METRICS.map((metric) => <ReportTrendChart key={metric.key} rows={trendRows} metric={metric} />)}
+          </div>
+        </>
       )}
     </div>
   );
@@ -258,7 +332,7 @@ export default function ReportDetailPage() {
         <TopNonconformityPanel title="품질 부적합 TOP 항목" rows={report.qualityTopNonconformityItems} />
       </section>
 
-      <section className="content-grid two">
+      <section className="content-grid two report-text-summary-grid">
         <SummaryPanel title="환경 요약">{report.envSummary}</SummaryPanel>
         <SummaryPanel title="품질 요약">{report.qualitySummary}</SummaryPanel>
         <SummaryPanel title="환경 부적합 요약">{report.envNcSummary}</SummaryPanel>

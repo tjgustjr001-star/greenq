@@ -163,7 +163,15 @@ export default function EnvironmentLogDetailPage() {
         {items.length === 0 ? (
           <EmptyState title="항목별 판정 결과가 없습니다." description="해당 환경 로그에 연결된 평가 항목이 없습니다." />
         ) : (
-          <table>
+          <table className="data-table environment-evaluation-table">
+            <colgroup>
+              <col className="col-item" />
+              <col className="col-value" />
+              <col className="col-standard" />
+              <col className="col-small" />
+              <col className="col-status" />
+              <col className="col-guide" />
+            </colgroup>
             <thead>
               <tr>
                 <th>항목</th>
@@ -177,15 +185,14 @@ export default function EnvironmentLogDetailPage() {
             <tbody>
               {items.map((item) => (
                 <tr key={item.envEvalItemId || item.itemCode || item.itemName} className={`evaluation-row ${String(statusOf(item)).toLowerCase()}`}>
-                  <td>
+                  <td className="text-left">
                     <strong>{item.itemName}</strong>
-                    {item.itemCode && <small>{item.itemCode}</small>}
                   </td>
                   <td>{formatMeasuredValue(item)}</td>
-                  <td>{formatStandard(item)}</td>
+                  <td className="text-left"><span className="table-text-wrap">{formatStandard(item)}</span></td>
                   <td>{formatDeviation(item.deviationRate)}</td>
                   <td><StatusBadge value={statusOf(item)} /></td>
-                  <td>{guideFor(item)}</td>
+                  <td className="text-left guide-cell"><span className="table-text-wrap">{guideFor(item)}</span></td>
                 </tr>
               ))}
             </tbody>
