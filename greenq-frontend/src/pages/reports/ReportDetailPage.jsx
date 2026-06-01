@@ -365,7 +365,7 @@ export default function ReportDetailPage() {
       <PageHeader
         eyebrow="Report Detail"
         title={report.reportTitle}
-        description="발급 당시 조건으로 자동 집계되어 저장된 리포트 스냅샷입니다."
+     
         actions={<><button className="secondary-button" onClick={() => navigate("/reports")}>목록으로</button>{isAdmin && <button className="danger-button" onClick={deleteReport}>삭제</button>}</>}
       />
 
@@ -406,19 +406,55 @@ export default function ReportDetailPage() {
         <p>{report.guideSummary || "-"}</p>
       </div>
 
-      <div className="panel">
-        <div className="panel-head"><h3>발급 조건 스냅샷</h3><p>리포트 발급 당시 필터와 주요 집계값입니다.</p></div>
-        <div className="report-condition-grid">
-          <div><span>리포트 유형</span><strong>{labelOf(condition?.reportType || report.reportType)}</strong></div>
-          <div><span>범위</span><strong>{labelOf(condition?.reportScope || report.reportScope)}</strong></div>
-          <div><span>대상</span><strong>{condition?.targetName || report.targetName}</strong></div>
-          <div><span>기간</span><strong>{report.startDate} ~ {report.endDate}</strong></div>
-          <div><span>평균 온도</span><strong>{condition?.envAvgTemp || "-"}℃</strong></div>
-          <div><span>평균 습도</span><strong>{condition?.envAvgHumidity || "-"}%</strong></div>
-          <div><span>평균 pH</span><strong>{condition?.envAvgPh || "-"}</strong></div>
-          <div><span>평균 EC</span><strong>{condition?.envAvgEc || "-"}</strong></div>
-        </div>
-      </div>
+      <div className="panel report-condition-panel">
+  <div className="panel-head">
+    <h3>발급 조건 스냅샷</h3>
+  </div>
+
+  <div className="report-condition-grid">
+    <div>
+      <span>리포트 유형</span>
+      <strong>{labelOf(condition?.reportType || report.reportType)}</strong>
+    </div>
+
+    <div>
+      <span>범위</span>
+      <strong>{labelOf(condition?.reportScope || report.reportScope)}</strong>
+    </div>
+
+    <div>
+      <span>대상</span>
+      <strong>{condition?.targetName || report.targetName}</strong>
+    </div>
+
+    <div>
+      <span>기간</span>
+      <strong>
+        {report.startDate} ~ {report.endDate}
+      </strong>
+    </div>
+
+    <div>
+      <span>평균 온도</span>
+      <strong>{condition?.envAvgTemp || "-"}℃</strong>
+    </div>
+
+    <div>
+      <span>평균 습도</span>
+      <strong>{condition?.envAvgHumidity || "-"}%</strong>
+    </div>
+
+    <div>
+      <span>평균 pH</span>
+      <strong>{condition?.envAvgPh || "-"}</strong>
+    </div>
+
+    <div>
+      <span>평균 EC</span>
+      <strong>{condition?.envAvgEc || "-"}</strong>
+    </div>
+  </div>
+</div>
     </div>
   );
 }
