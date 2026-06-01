@@ -200,8 +200,8 @@ public class GreenqCommandService {
         insertStandardItem(standardSetId, "LEAF_WIDTH", "엽폭", "GROWTH", "NUMBER", "cm", bd("7.00"), bd("12.00"), null, bd("15.00"), "Y", sort++, now);
         insertStandardItem(standardSetId, "LEAF_LENGTH", "엽장", "GROWTH", "NUMBER", "cm", bd("10.00"), bd("18.00"), null, bd("15.00"), "Y", sort++, now);
         insertStandardItem(standardSetId, "FRESH_WEIGHT", "생체중", "GROWTH", "NUMBER", "g", bd("80.00"), bd("140.00"), null, bd("20.00"), "Y", sort++, now);
-        insertStandardItem(standardSetId, "LEAF_COLOR", "엽색", "QUALITY_TEXT", "TEXT", null, null, null, "진녹색", null, "Y", sort++, now);
-        insertStandardItem(standardSetId, "GROWTH_STAGE", "생장단계", "QUALITY_TEXT", "TEXT", null, null, null, "GROWING", null, "Y", sort++, now);
+        insertStandardItem(standardSetId, "LEAF_COLOR", "엽색", "QUALITY_TEXT", "CATEGORY", null, null, null, "진녹색", null, "Y", sort++, now);
+        insertStandardItem(standardSetId, "GROWTH_STAGE", "생육단계", "QUALITY_TEXT", "CATEGORY", null, null, null, "GROWING", null, "Y", sort++, now);
         return sort - 1;
     }
 

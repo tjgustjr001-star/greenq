@@ -12,6 +12,14 @@ import { batchDisplayLabel } from "../../utils/batchLabel.js";
 
 const statusOrder = ["NORMAL", "CAUTION", "FAIL", "MISSING", "SKIPPED"];
 
+const statusCardMeta = {
+  NORMAL: { title: "정상", hint: "품질 판정" },
+  CAUTION: { title: "주의", hint: "품질 판정" },
+  FAIL: { title: "경고", hint: "품질 판정" },
+  MISSING: { title: "미입력", hint: "확인 필요" },
+  SKIPPED: { title: "판정 제외", hint: "대상 아님" },
+};
+
 function countByStatus(rows) {
   return rows.reduce((acc, row) => {
     const key = String(row.qualityStatus || "MISSING").toUpperCase();
@@ -75,9 +83,23 @@ export default function QualityPage() {
         </div>
       </div>
 
-      <section className="stat-grid five compact">
-        <div className="stat-card"><p>전체</p><strong>{measurements.length}</strong><span>실측 데이터</span></div>
-        {statusOrder.map((s) => <div className="stat-card" key={s}><p>{labelOf(s)}</p><strong>{counts[s] || 0}</strong><span>품질 판정</span></div>)}
+      <section className="stat-grid six compact quality-stat-grid">
+        <div className="stat-card">
+          <p>전체</p>
+          <strong>{measurements.length}</strong>
+          <span>실측 데이터</span>
+        </div>
+        {statusOrder.map((statusCode) => {
+          const meta = statusCardMeta[statusCode] || { title: labelOf(statusCode), hint: "품질 판정" };
+
+          return (
+            <div className="stat-card" key={statusCode}>
+              <p>{meta.title}</p>
+              <strong>{counts[statusCode] || 0}</strong>
+              <span>{meta.hint}</span>
+            </div>
+          );
+        })}
       </section>
 
       <div className="panel table-panel">

@@ -13,15 +13,15 @@ const STATUS_LABELS = {
   NORMAL: "정상",
   CAUTION: "주의",
   FAIL: "경고",
-  MISSING: "누락",
-  SKIPPED: "제외",
+  MISSING: "미입력",
+  SKIPPED: "판정 제외",
 };
 
 const TREND_METRICS = [
-  { key: "temperature", label: "온도", unit: "℃" },
-  { key: "humidity", label: "습도", unit: "%" },
-  { key: "ph", label: "pH", unit: "" },
-  { key: "ec", label: "EC", unit: "" },
+  { key: "temperature", label: "온도", unit: "℃", digit: 1 },
+  { key: "humidity", label: "습도", unit: "%", digit: 1 },
+  { key: "ph", label: "pH", unit: "", digit: 2 },
+  { key: "ec", label: "EC", unit: "", digit: 2 },
 ];
 
 function parseCondition(json) {
@@ -64,6 +64,16 @@ function formatDateLabel(value) {
   return `${mm}.${dd} ${hh}:${min}`;
 }
 
+function formatAxisDateLabel(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "-";
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  return `${mm}.${dd} ${hh}시`;
+}
+
 function getMetricPoints(rows, metric) {
   return asList(rows)
     .map((row) => ({
@@ -96,8 +106,8 @@ function TrendMetricSummary({ metric, rows }) {
   return (
     <div className="report-trend-summary-card">
       <span>{metric.label}</span>
-      <strong>{formatNumber(stats.average)}{metric.unit}</strong>
-      <small>최저 {formatNumber(stats.min)}{metric.unit} · 최고 {formatNumber(stats.max)}{metric.unit}</small>
+      <strong>{formatNumber(stats.average, metric.digit)}{metric.unit}</strong>
+      <small>최저 {formatNumber(stats.min, metric.digit)}{metric.unit} · 최고 {formatNumber(stats.max, metric.digit)}{metric.unit}</small>
     </div>
   );
 }
@@ -123,22 +133,49 @@ function ReportTrendChart({ rows, metric }) {
   const stats = getMetricStats(points);
   const rawMin = stats.min;
   const rawMax = stats.max;
-  const valuePadding = Math.max((rawMax - rawMin) * 0.16, metric.key === "ph" ? 0.15 : metric.key === "ec" ? 0.12 : 1);
+  const valuePadding = Math.max(
+    (rawMax - rawMin) * 0.18,
+    metric.key === "ph" ? 0.12 : metric.key === "ec" ? 0.08 : 0.8,
+  );
   const minValue = rawMin - valuePadding;
   const maxValue = rawMax + valuePadding;
   const valueRange = maxValue - minValue || 1;
-  const minTime = Math.min(...points.map((point) => point.time));
-  const maxTime = Math.max(...points.map((point) => point.time));
+  const minTime = points[0].time;
+  const maxTime = points[points.length - 1].time;
   const timeRange = maxTime - minTime || 1;
-  const chartTop = 18;
-  const chartBottom = 142;
-  const chartHeight = chartBottom - chartTop;
+
+  const svgWidth = 320;
+  const svgHeight = 164;
+  const plotLeft = 8;
+  const plotRight = 312;
+  const plotTop = 18;
+  const plotBottom = 134;
+  const plotHeight = plotBottom - plotTop;
+  const midPoint = points[Math.floor(points.length / 2)];
   const midValue = (minValue + maxValue) / 2;
-  const svgPoints = points.map((point) => {
-    const x = points.length === 1 ? 50 : ((point.time - minTime) / timeRange) * 100;
-    const y = chartBottom - ((point.value - minValue) / valueRange) * chartHeight;
-    return `${x},${Math.min(chartBottom, Math.max(chartTop, y))}`;
-  }).join(" ");
+
+  const plottedPoints = points.map((point) => {
+    const x = points.length === 1 ? svgWidth / 2 : plotLeft + ((point.time - minTime) / timeRange) * (plotRight - plotLeft);
+    const y = plotBottom - ((point.value - minValue) / valueRange) * plotHeight;
+    return {
+      ...point,
+      x,
+      y: Math.min(plotBottom, Math.max(plotTop, y)),
+    };
+  });
+
+  const linePath = plottedPoints
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(" ");
+  const areaPath = plottedPoints.length > 1
+    ? `${linePath} L ${plottedPoints[plottedPoints.length - 1].x.toFixed(2)} ${plotBottom} L ${plottedPoints[0].x.toFixed(2)} ${plotBottom} Z`
+    : "";
+  const markerPoints = plottedPoints.length === 1
+    ? []
+    : plottedPoints.length <= 28
+      ? plottedPoints
+      : [plottedPoints[0], plottedPoints[Math.floor(plottedPoints.length / 2)], plottedPoints[plottedPoints.length - 1]];
+  const latestPoint = plottedPoints[plottedPoints.length - 1];
 
   return (
     <div className="report-trend-chart-card">
@@ -147,25 +184,50 @@ function ReportTrendChart({ rows, metric }) {
           <strong>{metric.label}</strong>
           <p>{formatDateLabel(stats.firstAt)} ~ {formatDateLabel(stats.lastAt)}</p>
         </div>
-        <span>평균 {formatNumber(stats.average)}{metric.unit}</span>
+        <span>평균 {formatNumber(stats.average, metric.digit)}{metric.unit}</span>
       </div>
       <div className="report-trend-chart-plot">
         <div className="report-trend-y-scale" aria-hidden="true">
-          <span>{formatNumber(maxValue)}{metric.unit}</span>
-          <span>{formatNumber(midValue)}{metric.unit}</span>
-          <span>{formatNumber(minValue)}{metric.unit}</span>
+          <span>{formatNumber(maxValue, metric.digit)}{metric.unit}</span>
+          <span>{formatNumber(midValue, metric.digit)}{metric.unit}</span>
+          <span>{formatNumber(minValue, metric.digit)}{metric.unit}</span>
         </div>
-        <svg className="report-trend-line-chart" viewBox="0 0 100 160" preserveAspectRatio="none" aria-label={`${metric.label} 기간 추이`}>
-          <line x1="0" y1={chartTop} x2="100" y2={chartTop} />
-          <line x1="0" y1="80" x2="100" y2="80" />
-          <line x1="0" y1={chartBottom} x2="100" y2={chartBottom} />
-          <polyline points={svgPoints} />
-        </svg>
+        <div className="report-trend-chart-body">
+          <svg
+            className="report-trend-line-chart"
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            preserveAspectRatio="none"
+            aria-label={`${metric.label} 시간대별 추이`}
+          >
+            <line className="trend-grid-line" x1="0" y1={plotTop} x2={svgWidth} y2={plotTop} />
+            <line className="trend-grid-line" x1="0" y1={(plotTop + plotBottom) / 2} x2={svgWidth} y2={(plotTop + plotBottom) / 2} />
+            <line className="trend-grid-line" x1="0" y1={plotBottom} x2={svgWidth} y2={plotBottom} />
+            {plottedPoints.length > 1 && <path className="trend-area" d={areaPath} />}
+            {plottedPoints.length > 1 && <path className="trend-line" d={linePath} />}
+            {points.length === 1 && latestPoint && (
+              <circle className="trend-marker latest" cx={latestPoint.x} cy={latestPoint.y} r="5" />
+            )}
+            {markerPoints.map((point, index) => (
+              <circle
+                key={`${point.time}-${index}`}
+                className={`trend-marker${point.time === latestPoint?.time ? " latest" : ""}`}
+                cx={point.x}
+                cy={point.y}
+                r={point.time === latestPoint?.time ? "4.6" : "3.4"}
+              />
+            ))}
+          </svg>
+          <div className="report-trend-x-scale" aria-hidden="true">
+            <span>{formatAxisDateLabel(points[0].measuredAt)}</span>
+            <span>{formatAxisDateLabel(midPoint?.measuredAt)}</span>
+            <span>{formatAxisDateLabel(points[points.length - 1].measuredAt)}</span>
+          </div>
+        </div>
       </div>
-      <div className="report-trend-chart-foot">
-        <span>최저 {formatNumber(rawMin)}{metric.unit}</span>
-        <span>최고 {formatNumber(rawMax)}{metric.unit}</span>
-        <span>최근 {formatNumber(stats.latest)}{metric.unit}</span>
+      <div className="report-trend-stat-row">
+        <span>최저 {formatNumber(rawMin, metric.digit)}{metric.unit}</span>
+        <span>최고 {formatNumber(rawMax, metric.digit)}{metric.unit}</span>
+        <span>최근 {formatNumber(stats.latest, metric.digit)}{metric.unit}</span>
       </div>
     </div>
   );
@@ -214,7 +276,7 @@ function StatusDistributionPanel({ title, rows }) {
     <div className="panel report-visual-panel">
       <div className="panel-head compact">
         <h3>{title}</h3>
-        <p>전체 {total}건 기준 상태 비율</p>
+        <p>전체 {total}건 기준</p>
       </div>
       {total === 0 ? (
         <div className="report-empty-visual">집계할 데이터가 없습니다.</div>

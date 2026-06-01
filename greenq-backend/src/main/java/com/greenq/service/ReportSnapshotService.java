@@ -45,7 +45,7 @@ public class ReportSnapshotService {
                 + "건 / 평균 온도 " + fmt(env.avgTemp()) + "℃, 습도 " + fmt(env.avgHumidity()) + "%, pH " + fmt(env.avgPh())
                 + ", EC " + fmt(env.avgEc()) + ", CO2 " + fmt(env.avgCo2()) + "ppm";
         String qualitySummary = "실측 " + quality.totalCount() + "건, 정상 " + quality.normalCount() + "건, 주의 " + quality.cautionCount()
-                + "건, 경고 " + quality.failCount() + "건, 누락 " + quality.missingCount() + "건, 제외 " + quality.skippedCount()
+                + "건, 경고 " + quality.failCount() + "건, 미입력 " + quality.missingCount() + "건, 판정 제외 " + quality.skippedCount()
                 + "건 / 평균 초장 " + fmt(quality.avgPlantHeight()) + "cm, 엽폭 " + fmt(quality.avgLeafWidth())
                 + "cm, 엽장 " + fmt(quality.avgLeafLength()) + "cm, 생체중 " + fmt(quality.avgFreshWeight()) + "g";
         String envNcSummary = "환경 부적합 " + envNc.totalCount() + "건, 주의 " + envNc.cautionCount() + "건, 경고 " + envNc.failCount()
