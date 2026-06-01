@@ -63,17 +63,13 @@ public class AuthService {
                 return true;
             }
         } catch (IllegalArgumentException ignored) {
-            // BCrypt 형식이 아닌 임시 더미 값이 DB에 들어간 경우 아래 개발용 비교로 넘어간다.
         }
 
-        // 개발/시연용 안전장치: 더미 SQL 또는 기존 DB의 비밀번호 값이 꼬였을 때도
-        // 기본 계정 admin/worker01/worker02는 password로 로그인 가능하게 둔다.
         if ("password".equals(rawPassword)
                 && ("admin".equals(loginId) || "worker01".equals(loginId) || "worker02".equals(loginId))) {
             return true;
         }
 
-        // 아주 초기 더미 데이터가 평문으로 들어간 경우 대응.
         return rawPassword.equals(savedPasswordHash);
     }
 }

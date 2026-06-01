@@ -9,6 +9,7 @@ import StatCard from "../../components/StatCard.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { batchNameWithZone } from "../../utils/batchLabel.js";
 
 const GRAPH_RANGE_OPTIONS = [
   { value: "6", label: "최근 6시간", help: "실시간 이상 여부 확인" },
@@ -274,7 +275,7 @@ export default function EnvironmentPage() {
   }, [selectedBatch, selectedZoneId]);
 
   const scopeLabel = selectedBatch
-    ? `${selectedBatch.zoneName} · ${selectedBatch.batchName}`
+    ? batchNameWithZone(selectedBatch)
     : selectedZone
       ? `${selectedZone.zoneName} 전체 배치`
       : "전체 구역 · 전체 배치";
@@ -287,6 +288,7 @@ export default function EnvironmentPage() {
     await greenqApi.runEnvironmentSimulator({ batchId: selectedBatchId, forceAbnormal });
     setNotice(forceAbnormal ? "부적합 테스트 데이터가 DB에 생성되었습니다." : "정상 시뮬레이터 데이터가 DB에 생성되었습니다.");
     await reload();
+    window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
   };
 
   const deleteLog = async (log) => {
@@ -353,7 +355,7 @@ export default function EnvironmentPage() {
             <span>배치 선택</span>
             <select value={selectedBatchId} onChange={(e) => changeBatch(e.target.value)}>
               <option value="">전체 배치</option>
-              {filteredBatches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batch.zoneName} · {batch.batchName}</option>)}
+              {filteredBatches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batchNameWithZone(batch)}</option>)}
             </select>
           </label>
           <label>

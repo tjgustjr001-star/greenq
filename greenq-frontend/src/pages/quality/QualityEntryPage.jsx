@@ -5,6 +5,7 @@ import { greenqApi } from "../../api/greenqApi.js";
 import PageHeader from "../../components/PageHeader.jsx";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { batchDisplayLabel, batchNameWithZone } from "../../utils/batchLabel.js";
 
 function getNowForInput() {
   const now = new Date();
@@ -126,13 +127,14 @@ export default function QualityEntryPage() {
       />
       {error && <div className="notice-box">{error}</div>}
 
-      {fromQr && selectedBatch && <div className="notice-box qr-entry-notice">QR로 선택된 배치입니다. 현장 확인 후 샘플 실측값을 입력하세요. <strong>{selectedBatch.zoneName} · {selectedBatch.batchName}</strong></div>}
+      {fromQr && selectedBatch && <div className="notice-box qr-entry-notice">QR로 선택된 배치입니다. 현장 확인 후 샘플 실측값을 입력하세요. <strong>{batchNameWithZone(selectedBatch)}</strong></div>}
+      {!fromQr && initialBatchId && selectedBatch && <div className="notice-box qr-entry-notice">같은 배치로 새 실측을 입력합니다. <strong>{batchNameWithZone(selectedBatch)}</strong></div>}
 
       <div className="panel quality-entry-panel">
         <div className="quality-entry-top">
-          <label>배치 선택<select value={form.batchId} onChange={(e) => setForm((p) => ({ ...p, batchId: e.target.value }))}>{batches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batch.zoneName} · {batch.batchName} · {batch.cropName}</option>)}</select>{fromQr && <span className="field-hint">QR 스캔으로 자동 선택되었습니다. 필요 시 다른 배치로 변경할 수 있습니다.</span>}</label>
+          <label>배치 선택<select value={form.batchId} onChange={(e) => setForm((p) => ({ ...p, batchId: e.target.value }))}>{batches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batchDisplayLabel(batch)}</option>)}</select>{fromQr && <span className="field-hint">QR 스캔으로 자동 선택되었습니다. 필요 시 다른 배치로 변경할 수 있습니다.</span>}</label>
           <label>측정일시<input type="datetime-local" value={form.measuredAt} onChange={(e) => setForm((p) => ({ ...p, measuredAt: e.target.value }))} /></label>
-          <div className="quality-target-box"><span>선택 배치</span><strong>{selectedBatch ? `${selectedBatch.zoneName} · ${selectedBatch.batchName}` : "배치를 선택하세요"}</strong><p>{selectedBatch?.cropName || "-"}</p></div>
+          <div className="quality-target-box"><span>선택 배치</span><strong>{selectedBatch ? batchNameWithZone(selectedBatch) : "배치를 선택하세요"}</strong><p>{selectedBatch?.cropName || "-"}</p></div>
         </div>
 
         <div className="quality-summary-strip">

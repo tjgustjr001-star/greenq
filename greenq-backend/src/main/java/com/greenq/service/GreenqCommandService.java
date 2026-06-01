@@ -610,7 +610,6 @@ public class GreenqCommandService {
         log.setDeleteYn("Y");
         log.setDeletedAt(now);
 
-        // 원본 환경 로그가 숨겨졌는데 부적합/알림이 운영 화면에 남는 것을 막는다.
         em.createNativeQuery("""
                 update env_nonconformity
                 set delete_yn = 'Y', deleted_at = :deletedAt
@@ -640,7 +639,6 @@ public class GreenqCommandService {
         measurement.setDeleteYn("Y");
         measurement.setDeletedAt(now);
 
-        // 실측 데이터가 숨겨졌는데 품질 부적합이 운영 화면에 남는 것을 막는다.
         em.createNativeQuery("""
                 update quality_nonconformity
                 set delete_yn = 'Y', deleted_at = :deletedAt

@@ -58,11 +58,13 @@ export default function IssueDetailPage() {
 
   const markAlertsRead = async () => {
     await greenqApi.markEnvIssueAlertsRead(issueId, { userId: currentUserId(user) });
+    window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
     await reload();
   };
 
   const closeAlerts = async () => {
     await greenqApi.closeEnvIssueAlerts(issueId, { userId: currentUserId(user) });
+    window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
     await reload();
   };
 
@@ -101,8 +103,8 @@ export default function IssueDetailPage() {
       {type === "env" && (
         <div className="panel">
           <div className="panel-head">
-            <div><h3>환경 알림</h3><p className="panel-desc">미확인 {unreadAlertCount}건 · 활성 {activeAlertCount}건</p></div>
-            <div className="inline-actions"><button className="secondary-button" onClick={markAlertsRead} disabled={activeAlertCount === 0}>읽음 처리</button><button className="danger-button" onClick={closeAlerts} disabled={activeAlertCount === 0}>알림 닫기</button></div>
+            <div><h3>환경 알림</h3><p className="panel-desc">미확인 {unreadAlertCount}건 · 표시중 {activeAlertCount}건</p></div>
+            <div className="inline-actions"><button className="secondary-button" onClick={markAlertsRead} disabled={unreadAlertCount === 0}>읽음 처리</button><button className="danger-button" onClick={closeAlerts} disabled={activeAlertCount === 0}>알림 제외</button></div>
           </div>
           {alerts.length === 0 ? <p className="muted-text">연결된 환경 알림이 없습니다.</p> : <table className="data-table issue-alert-table"><colgroup><col className="col-date" /><col className="col-title" /><col className="col-status" /><col className="col-status" /><col className="col-content" /></colgroup><thead><tr><th>생성일시</th><th>제목</th><th>수준</th><th>상태</th><th>내용</th></tr></thead><tbody>{alerts.map((alert) => <tr key={alert.alertId}><td>{alert.createdAt}</td><td className="text-left"><span className="table-text-wrap">{alert.alertTitle}</span></td><td><StatusBadge value={alert.alertLevel} /></td><td><span className={`status-badge ${String(alert.alertStatus || "").toLowerCase()}`}>{alertStatusLabel(alert.alertStatus)}</span></td><td className="text-left"><span className="table-text-wrap">{alert.alertMessage}</span></td></tr>)}</tbody></table>}
         </div>

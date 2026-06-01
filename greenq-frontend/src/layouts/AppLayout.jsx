@@ -1,5 +1,5 @@
 import { Activity, AlertTriangle, BarChart3, Bell, ClipboardCheck, Home, Layers3, Leaf, LogOut, Map, Trash2, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { greenqApi } from "../api/greenqApi.js";
 import { alertStatusLabel, issueStatusLabel, labelOf } from "../data/displayLabels.js";
@@ -31,25 +31,30 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const user = getCurrentUser();
   const role = user.role || user.roleCode || "WORKER";
+  const roleLabel = labelOf(role);
+  const userName = user.name || user.userName || "사용자";
+  const showRoleChip = userName !== roleLabel;
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
 
-  const refreshAlerts = () => {
+  const refreshAlerts = useCallback(() => {
     return greenqApi.envAlerts({ status: "UNREAD" })
       .then((rows) => setAlerts(rows || []))
       .catch(() => setAlerts([]));
-  };
+  }, []);
 
   useEffect(() => {
-    let alive = true;
-    greenqApi.envAlerts({ status: "UNREAD" })
-      .then((rows) => {
-        if (!alive) return;
-        setAlerts(rows || []);
-      })
-      .catch(() => alive && setAlerts([]));
-    return () => { alive = false; };
-  }, [location.pathname]);
+    refreshAlerts();
+  }, [refreshAlerts, location.pathname]);
+
+  useEffect(() => {
+    const timer = window.setInterval(refreshAlerts, 10000);
+    window.addEventListener("greenq:env-alerts-refresh", refreshAlerts);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("greenq:env-alerts-refresh", refreshAlerts);
+    };
+  }, [refreshAlerts]);
 
   const handleLogout = () => {
     clearCurrentUser();
@@ -66,15 +71,17 @@ export default function AppLayout() {
       setNotificationOpen(false);
       const rawId = alert.rawId || alert.envNcId || String(alert.issueId).replace(/^(ENV|QLT)-/i, "");
       navigate(`/issues/${normalizeIssueType(alert.issueType)}/${rawId}`);
-      refreshAlerts();
+      await refreshAlerts();
+      window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
     }
   };
 
-  const closeAlert = async (event, alert) => {
+  const hideAlert = async (event, alert) => {
     event.stopPropagation();
     if (!alert.alertId) return;
     await greenqApi.closeEnvAlert(alert.alertId, { userId: currentUserId(user) });
     await refreshAlerts();
+    window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
   };
 
   const visibleMenus = menus.filter((menu) => (menu.roles || []).includes(role));
@@ -83,7 +90,7 @@ export default function AppLayout() {
     <div className="app-shell">
       <aside className="sidebar">
         <button className="brand" type="button" onClick={() => navigate(defaultPathForRole(role))}>
-          <div className="brand-mark">GQ</div><div><h1>GreenQ</h1><p>Plant Factory QC</p></div>
+          <div className="brand-mark">GQ</div><div><h1>GreenQ</h1><p>품질관리 시스템</p></div>
         </button>
         <nav className="side-nav">
           {visibleMenus.map((menu) => {
@@ -93,27 +100,27 @@ export default function AppLayout() {
           })}
         </nav>
         <div className="sidebar-footer">
-          <div className="mini-card"><Layers3 size={18} /><div><strong>GreenQ</strong><p>환경·품질 운영 화면</p></div></div>
+          <div className="mini-card"><Layers3 size={18} /><div><strong>GreenQ</strong><p>환경·품질 통합 관리</p></div></div>
           <button type="button" className="logout-button" onClick={handleLogout}><LogOut size={17} /><span>로그아웃</span></button>
         </div>
       </aside>
 
       <section className="main-area">
         <header className="topbar">
-          <div><p className="eyebrow">GreenQ Frontend</p><strong>{user.name || user.userName || "사용자"}</strong><span className={`role-chip ${role === "ADMIN" ? "admin" : "worker"}`}>{labelOf(role)}</span></div>
+          <div><p className="eyebrow">현재 로그인</p><strong>{userName}</strong>{showRoleChip && <span className={`role-chip ${role === "ADMIN" ? "admin" : "worker"}`}>{roleLabel}</span>}</div>
           <div className="topbar-actions">
-            <button type="button" className={`notification-button ${notificationOpen ? "active" : ""}`} onClick={() => setNotificationOpen((prev) => !prev)} title="환경 부적합 알림">
+            <button type="button" className={`notification-button ${notificationOpen ? "active" : ""}`} onClick={() => setNotificationOpen((prev) => !prev)} title="환경 알림">
               <Bell size={18} /><span>알림</span>{alerts.length > 0 && <em>{alerts.length}</em>}
             </button>
             {notificationOpen && (
               <div className="notification-preview open">
-                <div className="notification-preview-head"><strong>환경 부적합 알림</strong><button type="button" onClick={() => navigate("/issues?type=env")}>전체 보기</button></div>
+                <div className="notification-preview-head"><strong>환경 알림</strong><button type="button" onClick={() => navigate("/issues?type=env")}>전체 보기</button></div>
                 {alerts.length === 0 ? <p className="notification-empty">확인할 환경 부적합 알림이 없습니다.</p> : alerts.slice(0, 4).map((alert) => (
                   <button key={`alert-${alert.alertId}`} type="button" className="notification-preview-item" onClick={() => openAlert(alert)}>
                     <span>{alert.zoneName} · {alert.itemName}</span>
                     <small>{labelOf(alert.alertLevel || alert.severity)} / {issueStatusLabel("env", alert.status)} / {alertStatusLabel(alert.alertStatus)}</small>
                     <small>{alert.alertMessage}</small>
-                    <em role="button" tabIndex={-1} onClick={(event) => closeAlert(event, alert)}>닫기</em>
+                    <em role="button" tabIndex={-1} onClick={(event) => hideAlert(event, alert)}>알림 제외</em>
                   </button>
                 ))}
               </div>

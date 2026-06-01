@@ -952,7 +952,6 @@ public class GreenqQueryService {
     }
 
     private List<Map<String, Object>> workerUnreadAlerts(Long userId) {
-        // 현재 MVP에는 배치별 담당자 테이블이 없으므로 WORKER/ALL/개별 대상 알림을 작업자 홈에 노출한다.
         StringBuilder sql = new StringBuilder("""
                 select a.alert_id, a.created_at, a.alert_title, a.alert_message, a.alert_level, a.alert_status,
                        a.env_nc_id, a.batch_id, b.batch_name, a.zone_id, z.zone_name,

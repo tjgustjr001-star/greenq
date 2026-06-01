@@ -63,16 +63,12 @@ export default function ActionMenu({ items = [], label = "관리 메뉴" }) {
     const rect = triggerRef.current.getBoundingClientRect();
     const estimatedMenuHeight = visibleItems.length * 44 + 16;
 
-    // 요청 기준: 항상 클릭한 점점점 버튼 하단에 출력한다.
     const top = rect.bottom + MENU_GAP;
 
-    // 관리 버튼 아래에 자연스럽게 붙도록 오른쪽 끝을 맞춘다.
     let left = rect.right - MENU_WIDTH;
 
-    // 화면 좌우만 보정한다. 좌측으로 과하게 튀는 계산은 하지 않는다.
     left = Math.max(SCREEN_MARGIN, Math.min(left, window.innerWidth - MENU_WIDTH - SCREEN_MARGIN));
 
-    // 하단 출력은 유지하고, 화면 아래가 부족할 때만 내부 스크롤을 건다.
     const availableBelow = Math.max(140, window.innerHeight - top - SCREEN_MARGIN);
     const maxHeight = Math.min(estimatedMenuHeight, availableBelow);
 

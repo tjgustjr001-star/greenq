@@ -8,6 +8,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { labelOf } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { batchDisplayLabel } from "../../utils/batchLabel.js";
 
 const statusOrder = ["NORMAL", "CAUTION", "FAIL", "MISSING", "SKIPPED"];
 
@@ -68,7 +69,7 @@ export default function QualityPage() {
 
       <div className="panel quality-filter-panel">
         <div className="quality-filter-grid">
-          <label>배치<select value={batchId} onChange={(e) => setFilter("batchId", e.target.value)}><option value="">전체 배치</option>{batches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batch.zoneName} · {batch.batchName} · {batch.cropName}</option>)}</select></label>
+          <label>배치<select value={batchId} onChange={(e) => setFilter("batchId", e.target.value)}><option value="">전체 배치</option>{batches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batchDisplayLabel(batch)}</option>)}</select></label>
           <label>품질 상태<select value={status} onChange={(e) => setFilter("status", e.target.value)}><option value="">전체 상태</option>{statusOrder.map((s) => <option key={s} value={s}>{labelOf(s)}</option>)}</select></label>
           <div className="quality-filter-summary"><span>조회 결과</span><strong>{measurements.length}건</strong><p>{batchId ? "선택 배치 기준" : "전체 배치 기준"}</p></div>
         </div>
@@ -87,7 +88,7 @@ export default function QualityPage() {
             {measurements.map((m) => (
               <tr key={m.measurementId}>
                 <td>{m.measuredAt}</td>
-                <td className="text-left"><button className="link-cell" onClick={() => navigate(`/quality/${m.measurementId}`)}><strong>{m.zoneName || "-"}</strong><br /><small>{m.batchName}</small></button></td>
+                <td className="text-left"><button className="link-cell" onClick={() => navigate(`/quality/${m.measurementId}`)}><strong>{m.zoneName || "-"}</strong><br /><small>{batchDisplayLabel(m, { includeZone: false, includeCrop: false })}</small></button></td>
                 <td>{m.cropName || "-"}</td><td>{m.sampleCount}</td><td>{m.plantHeight ?? "-"}</td><td>{m.leafWidth ?? "-"}</td><td>{m.leafLength ?? "-"}</td><td>{m.freshWeight ?? "-"}</td><td><StatusBadge value={m.qualityStatus} /></td>
                 <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/quality/${m.measurementId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => deleteMeasurement(m) }]} /></td>
               </tr>

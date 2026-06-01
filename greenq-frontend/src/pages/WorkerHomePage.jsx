@@ -6,6 +6,7 @@ import { greenqApi } from "../api/greenqApi.js";
 import { alertStatusLabel, issueStatusLabel, labelOf } from "../data/displayLabels.js";
 import { asArray, useApiData } from "../hooks/useApiData.js";
 import { getCurrentUser } from "../utils/auth.js";
+import { batchNameWithZone } from "../utils/batchLabel.js";
 
 function issueTarget(issue) {
   const rawId = issue.rawId || String(issue.issueId || "").replace(/^(ENV|QLT)-/i, "");
@@ -33,6 +34,7 @@ export default function WorkerHomePage() {
   const openAlert = async (alert) => {
     if (alert.alertId) {
       await greenqApi.markEnvAlertRead(alert.alertId, { userId });
+      window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
       await reload();
     }
     navigate(alertTarget(alert));
@@ -75,7 +77,7 @@ export default function WorkerHomePage() {
               {needMeasurements.map((batch) => (
                 <button key={`need-${batch.batchId}`} className="worker-task-card" onClick={() => navigate(`/quality/new?batchId=${batch.batchId}`)}>
                   <div>
-                    <strong>{batch.zoneName} · {batch.batchName}</strong>
+                    <strong>{batchNameWithZone(batch)}</strong>
                     <p>{batch.cropName} / {labelOf(batch.batchStatus)} / 마지막 실측 {batch.lastMeasuredAt || "없음"}</p>
                   </div>
                   <span>입력하기</span>
@@ -137,7 +139,7 @@ export default function WorkerHomePage() {
               <thead><tr><th>측정일시</th><th>배치</th><th>샘플</th><th>품질</th></tr></thead>
               <tbody>{myMeasurements.map((m) => (
                 <tr key={`my-m-${m.measurementId}`} onClick={() => navigate(`/quality/${m.measurementId}`)}>
-                  <td>{m.measuredAt}</td><td><strong>{m.batchName}</strong><br /><small>{m.zoneName}</small></td><td>{m.sampleCount}</td><td><StatusBadge value={m.qualityStatus} /></td>
+                  <td>{m.measuredAt}</td><td><strong>{batchNameWithZone(m)}</strong></td><td>{m.sampleCount}</td><td><StatusBadge value={m.qualityStatus} /></td>
                 </tr>
               ))}</tbody>
             </table>
@@ -155,7 +157,7 @@ export default function WorkerHomePage() {
               <tbody>{myActions.map((a) => (
                 <tr key={`my-a-${a.actionId}`} onClick={() => navigate(`/issues/env/${a.envNcId}`)}>
                   <td>{a.actionAt}</td>
-                  <td><strong>{a.zoneName}</strong><br /><small>{a.batchName}</small></td>
+                  <td><strong>{batchNameWithZone(a)}</strong></td>
                   <td>{a.itemName}</td>
                   <td>{a.actionContent || a.resultNote || "-"}</td>
                   <td><StatusBadge value={a.actionStatusAfter} /></td>

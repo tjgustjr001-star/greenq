@@ -28,12 +28,12 @@ export default function DashboardPage() {
     <div className="page">
       <PageHeader eyebrow="Dashboard" title="대시보드" description="DB에 저장된 식물공장 운영 상태, 환경 이탈, 품질 실측 결과를 한눈에 확인합니다." actions={<><button className="secondary-button" onClick={() => navigate("/environment")}>환경 모니터링</button><button className="primary-button" onClick={() => navigate("/quality")}>실측 입력</button></>} />
       <section className="stat-grid dashboard-stat-grid">
-        <StatCard label="운영 중 배치" value={data?.growingBatchCount ?? 0} hint="GROWING 기준" />
-        <StatCard label="미확인 환경 알림" value={data?.unreadEnvAlertCount ?? 0} hint="ENV_ALERT UNREAD" tone="red" />
+        <StatCard label="운영 중 배치" value={data?.growingBatchCount ?? 0}  />
+        <StatCard label="미확인 환경 알림" value={data?.unreadEnvAlertCount ?? 0} tone="red" />
         <StatCard label="최근 환경 상태" value={labelOf(latestEnv.envStatus) || "없음"} hint={latestEnv.measuredAt || "-"} tone="green" />
         <StatCard label="최근 품질 상태" value={labelOf(latestQuality.qualityStatus) || "없음"} hint={latestQuality.measuredAt || "-"} tone="blue" />
-        <StatCard label="미조치 부적합" value={data?.openIssueCount ?? 0} hint="환경/품질 통합" tone="red" />
-        <StatCard label="등록 작물" value={data?.cropCount ?? 0} hint="기준값 관리 대상" />
+        <StatCard label="미조치 부적합" value={data?.openIssueCount ?? 0}  tone="red" />
+        <StatCard label="등록 작물" value={data?.cropCount ?? 0}  />
       </section>
       <section className="content-grid two">
         <div className="panel">

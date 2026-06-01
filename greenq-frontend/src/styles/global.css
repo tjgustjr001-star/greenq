@@ -827,7 +827,6 @@ input:focus, select:focus, textarea:focus {
 }
 
 
-/* v2 layout updates */
 .sidebar-footer {
   display: grid;
   gap: 12px;
@@ -1013,7 +1012,6 @@ input:focus, select:focus, textarea:focus {
 }
 
 
-/* v3 updates */
 .content-grid.two .panel.fake-form {
   padding: 22px;
 }
@@ -1054,7 +1052,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v4 updates */
 .dashboard-stat-grid .stat-card {
   text-align: center;
   display: grid;
@@ -1182,7 +1179,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v5 quality updates */
 .quality-register-panel {
   overflow: visible;
 }
@@ -1278,7 +1274,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v6 issue/report updates */
 .big-number {
   display: block;
   font-size: 46px;
@@ -1289,7 +1284,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v8 updates */
 .notification-button.active {
   border-color: var(--green);
   color: var(--green-dark);
@@ -1323,7 +1317,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v9 registration updates */
 .wide-field {
   grid-column: span 2;
 }
@@ -1335,7 +1328,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v10 status badge click selector */
 .status-select {
   position: relative;
   display: inline-grid;
@@ -1439,7 +1431,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v11 status selector bugfix and generalized use */
 .panel.detail-hero,
 .panel.info-panel,
 .panel.fake-form {
@@ -1564,7 +1555,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v13 Korean label adjustments */
 .status-badge {
   white-space: nowrap;
   min-width: 52px;
@@ -1580,7 +1570,6 @@ button.secondary-button + button.primary-button {
 }
 
 
-/* v14 alignment and Korean stat value updates */
 .stat-card {
   text-align: center;
   display: grid;
@@ -1661,23 +1650,19 @@ button.secondary-button + button.primary-button {
   text-align: left;
 }
 
-/* Table columns that should stay readable as text */
 td .table-sub {
   text-align: center;
 }
 
-/* Keep action button columns visually centered */
 td:last-child {
   text-align: center;
 }
 
-/* Prevent long Korean labels from looking cramped in cards */
 .stat-card strong {
   line-height: 1.15;
 }
 
 
-/* v15 CRUD, deletion, trash alignment */
 .inline-actions.center {
   justify-content: center;
   align-items: center;
@@ -1705,7 +1690,6 @@ td:last-child {
 }
 
 
-/* v16 compact action menu and deletion-data management */
 .action-menu {
   position: relative;
   display: inline-flex;
@@ -1805,7 +1789,6 @@ td:last-child {
 }
 
 
-/* v17 action menu visual/placement fix */
 .action-menu {
   position: relative;
   display: inline-flex;
@@ -1894,7 +1877,6 @@ td:last-child {
 }
 
 
-/* v18 action menu anchoring fix */
 .action-menu {
   position: relative;
   display: inline-flex;
@@ -1923,8 +1905,6 @@ td:last-child {
   transform: translateY(-1px);
 }
 
-/* fixed 클래스가 붙은 메뉴는 버튼의 실제 viewport 좌표 기준으로 표시된다.
-   기존 absolute 위치값이 남아 있어도 이 규칙이 최종 우선 적용된다. */
 .action-menu-panel.fixed {
   position: fixed !important;
   right: auto !important;
@@ -1969,7 +1949,6 @@ td:last-child {
 }
 
 
-/* v20 action menu: always open below the trigger, with fixed z-index */
 .action-menu {
   position: relative;
   display: inline-flex;
@@ -2041,7 +2020,6 @@ td:last-child {
   background: #fff1f0;
 }
 
-/* 테이블/패널 안에서 드롭다운이 가려지지 않게 보정 */
 .panel,
 .page,
 .app-main,
@@ -2050,7 +2028,6 @@ td:last-child {
 }
 
 
-/* v21 action menu z-index hard fix: portal to document.body */
 .action-menu {
   position: relative;
   display: inline-flex;
@@ -2079,8 +2056,6 @@ td:last-child {
   transform: translateY(-1px);
 }
 
-/* 메뉴는 더 이상 테이블 내부가 아니라 document.body에 렌더링된다.
-   그래서 행/버튼/패널 z-index가 메뉴 위로 올라오는 문제가 사라진다. */
 .action-menu-portal-panel {
   z-index: 2147483647;
   background: #fff;
@@ -2135,7 +2110,6 @@ td:last-child {
   margin-top: 10px;
 }
 
-/* v11 env alert flow updates */
 .notification-preview-item {
   position: relative;
 }
@@ -2163,7 +2137,6 @@ td:last-child {
   color: #68756e;
 }
 
-/* v15 modal and drawer UX updates */
 .modal-backdrop,
 .drawer-backdrop {
   position: fixed;
@@ -2314,7 +2287,6 @@ td:last-child {
   color: #2b5c9b;
 }
 
-/* v11.6 environment monitoring filter/range UX fix */
 .filter-panel.environment-filter-panel {
   padding: 18px 20px;
   overflow: visible;
@@ -2393,7 +2365,6 @@ td:last-child {
   }
 }
 
-/* v1.1.7 environment monitoring stabilization */
 .environment-filter-panel {
   padding: 20px;
   display: grid;
@@ -2554,7 +2525,6 @@ td:last-child {
   }
 }
 
-/* v1.1.8 report auto aggregation updates */
 .report-summary-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2699,7 +2669,6 @@ td:last-child {
 }
 
 
-/* v1.1.9 worker home */
 .worker-stat-grid {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
@@ -2784,7 +2753,6 @@ td:last-child {
   }
 }
 
-/* v11.10 quality/measurement workflow stabilization */
 .stat-grid.five {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -2970,7 +2938,6 @@ td:last-child {
   background: #f4f8f5;
 }
 
-/* v1.1.12 QR based batch access */
 .qr-modal-body {
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1.2fr);
@@ -3101,7 +3068,6 @@ td:last-child {
   }
 }
 
-/* v11.13 environment chart multi-series updates */
 .line-chart .series-line {
   fill: none;
   stroke-width: 2.4;
@@ -3156,7 +3122,6 @@ td:last-child {
   line-height: 1.5;
 }
 
-/* v1.1.18 report visualization updates */
 .report-visual-panel {
   min-height: 0;
 }
@@ -3399,7 +3364,6 @@ td:last-child {
   }
 }
 
-/* v1.1.20 report visualization stabilization */
 .report-trend-head {
   align-items: flex-start;
 }
@@ -3599,7 +3563,6 @@ td:last-child {
   }
 }
 
-/* v1.1.21 table readability and detail layout stabilization */
 .table-panel {
   overflow: hidden;
 }
@@ -3723,7 +3686,6 @@ td:last-child {
   }
 }
 
-/* v1.1.21 additional list table width presets */
 .data-table col.col-zone { width: 10%; }
 .data-table col.col-batch { width: 18%; }
 .issue-list-table col.col-date { width: 15%; }

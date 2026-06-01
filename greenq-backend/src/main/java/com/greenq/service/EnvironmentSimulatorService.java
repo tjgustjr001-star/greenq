@@ -59,11 +59,6 @@ public class EnvironmentSimulatorService {
     public void runEveryThirtyMinutes() {
         catchUpMissingSimulatorLogs("SCHEDULED");
     }
-
-    /**
-     * 운영중 배치별 마지막 SIMULATOR 로그 이후의 30분 슬롯을 보충합니다.
-     * PC 절전, 서버 중단, DevTools 재시작 등으로 스케줄이 실행되지 못한 구간을 복구하기 위한 흐름입니다.
-     */
     public Map<String, Object> catchUpMissingSimulatorLogs(String trigger) {
         LocalDateTime targetSlot = currentHalfHourSlot();
         List<CultivationBatch> targetBatches = findGrowingBatches(null);

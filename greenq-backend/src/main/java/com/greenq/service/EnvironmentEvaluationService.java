@@ -44,13 +44,6 @@ public class EnvironmentEvaluationService {
         this.nonconformityRepository = nonconformityRepository;
         this.envAlertService = envAlertService;
     }
-
-    /**
-     * ENVIRONMENT_LOG 저장 이후 반드시 호출하는 환경 평가 공통 진입점.
-     * 시뮬레이터, 수동 입력, 향후 센서 입력 모두 이 메서드를 통해
-     * ENV_EVALUATION_ITEM 저장, ENVIRONMENT_LOG.env_status 갱신,
-     * ENV_NONCONFORMITY 생성/갱신, 기존 부적합 자동 해결을 동일하게 처리한다.
-     */
     public EvaluationSummary evaluateSavedLog(EnvironmentLog log, String resolvedType, String resolvedNote) {
         if (log == null || log.getEnvLogId() == null) {
             throw new IllegalArgumentException("저장된 환경 로그만 평가할 수 있습니다.");

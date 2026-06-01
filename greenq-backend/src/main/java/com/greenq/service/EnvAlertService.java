@@ -22,12 +22,6 @@ public class EnvAlertService {
     public EnvAlertService(EnvAlertRepository envAlertRepository) {
         this.envAlertRepository = envAlertRepository;
     }
-
-    /**
-     * 환경 부적합 생성/갱신 시 호출하는 알림 공통 진입점.
-     * 같은 환경 부적합의 닫히지 않은 알림이 있으면 최신 내용으로 갱신하고,
-     * 닫힌 알림만 있거나 알림이 없으면 새 UNREAD 알림을 만든다.
-     */
     public EnvAlert createOrRefreshAlert(EnvNonconformity nc, boolean createdNonconformity) {
         if (nc == null || nc.getEnvNcId() == null) {
             throw new IllegalArgumentException("환경 부적합이 저장된 뒤 알림을 생성할 수 있습니다.");

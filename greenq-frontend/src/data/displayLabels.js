@@ -27,7 +27,7 @@ export const qualityNcStatusLabels = {
 export const alertStatusLabels = {
   UNREAD: "읽지 않음",
   READ: "읽음",
-  CLOSED: "닫힘",
+  CLOSED: "알림 제외",
 };
 
 export const statusLabels = {
