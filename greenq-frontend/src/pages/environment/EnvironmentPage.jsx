@@ -286,13 +286,13 @@ export default function EnvironmentPage() {
       return;
     }
     await greenqApi.runEnvironmentSimulator({ batchId: selectedBatchId, forceAbnormal });
-    setNotice(forceAbnormal ? "부적합 테스트 데이터가 DB에 생성되었습니다." : "정상 시뮬레이터 데이터가 DB에 생성되었습니다.");
+    setNotice(forceAbnormal ? "부적합 테스트 데이터가 생성되었습니다." : "정상 시뮬레이터 데이터가 생성되었습니다.");
     await reload();
     window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
   };
 
   const deleteLog = async (log) => {
-    if (!window.confirm("환경 데이터를 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("환경 데이터를 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteEnvironmentLog(log.envLogId);
     await reload();
   };
@@ -316,14 +316,14 @@ export default function EnvironmentPage() {
     updateSearchParams(selectedZoneId, selectedBatchId, hours);
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">환경 데이터를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">환경 데이터를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
       <PageHeader
         eyebrow="Environment"
         title="환경 모니터링"
-        description={`구역과 배치를 선택해 DB에 저장된 ${selectedRange.label} 환경 데이터를 확인합니다.`}
+        description={`구역과 배치를 선택해 환경 데이터를 확인합니다.`}
         actions={isAdmin ? (
           <>
             <button className="secondary-button" onClick={() => runSimulator(false)}><Plus size={16} />정상 데이터 생성</button>

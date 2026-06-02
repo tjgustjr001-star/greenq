@@ -3969,7 +3969,7 @@ td:last-child {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  padding: 24px 28px 28px;
+  padding: 28px 28px 28px;
 }
 
 .report-condition-grid > div {
@@ -4018,4 +4018,35 @@ td:last-child {
     grid-template-columns: 1fr;
     padding: 20px;
   }
+}
+
+.report-list-table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.report-list-table th:nth-child(3),
+.report-list-table td:nth-child(3) {
+  min-width: 88px;
+  width: 88px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.report-list-table th:nth-child(5),
+.report-list-table td:nth-child(5) {
+  min-width: 180px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.report-list-table th:nth-child(6),
+.report-list-table td:nth-child(6),
+.report-list-table th:nth-child(7),
+.report-list-table td:nth-child(7),
+.report-list-table th:nth-child(9),
+.report-list-table td:nth-child(9) {
+  white-space: nowrap;
+  text-align: center;
 }

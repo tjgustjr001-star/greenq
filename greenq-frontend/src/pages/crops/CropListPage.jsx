@@ -95,7 +95,7 @@ export default function CropListPage() {
       <PageHeader
         eyebrow="Crop & Standard"
         title="작물/기준 관리"
-        description="DB에 저장된 작물 목록을 확인하고 작물별 기준 관리로 이동합니다."
+        description="등록된 작물 목록을 확인하고 작물별 기준 관리로 이동합니다."
         actions={isAdmin ? <button className="primary-button" onClick={startCreate}><Plus size={16} />작물 등록</button> : null}
       />
       {!isAdmin && <div className="notice-box">작업자는 작물과 기준값을 조회할 수 있습니다.</div>}
@@ -105,7 +105,7 @@ export default function CropListPage() {
       <Modal
         open={isAdmin && modalOpen}
         title={isEdit ? "작물 수정" : "작물 등록"}
-        description="단순 작물 정보는 목록 화면 흐름을 유지하기 위해 모달에서 등록합니다."
+        description="새로운 작물 정보를 등록합니다."
         onClose={closeModal}
         footer={<><button className="secondary-button" onClick={closeModal} disabled={saving}>취소</button><button className="primary-button" onClick={saveCrop} disabled={saving}>{saving ? "저장 중..." : isEdit ? "수정 저장" : "등록"}</button></>}
       >
@@ -122,7 +122,7 @@ export default function CropListPage() {
                 <option value="NONE">적용 안 함</option>
                 <option value="LETTUCE_SAMPLE">상추 샘플 기준 적용</option>
               </select>
-              <span className="field-help">샘플을 선택하면 작물 등록 후 환경 기준과 품질 기준이 자동 생성됩니다. 생성된 기준은 작물 상세 화면에서 수정할 수 있습니다.</span>
+              <span className="field-help">샘플을 선택하면 작물 등록 후 환경 기준과 품질 기준이 자동 생성됩니다.</span>
             </label>
           )}
         </div>

@@ -191,7 +191,7 @@ export default function ReportListPage() {
           <h3>리포트 목록</h3>
           <p>리포트 원본은 수정하지 않고, 같은 조건으로 다시 발급하면 버전이 증가합니다.</p>
         </div>
-        <table>
+        <table className="report-list-table">
           <thead>
             <tr><th>리포트명</th><th>유형</th><th>범위</th><th>대상</th><th>기간</th><th>버전</th><th>상태</th><th>발급일</th><th>관리</th></tr>
           </thead>
