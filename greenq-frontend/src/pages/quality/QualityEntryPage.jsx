@@ -205,7 +205,7 @@ export default function QualityEntryPage() {
   if (loading) {
     return (
       <div className="panel">
-        <p className="muted-text">배치 정보를 DB에서 불러오는 중입니다...</p>
+        <p className="muted-text">배치 정보를 불러오는 중입니다...</p>
       </div>
     );
   }

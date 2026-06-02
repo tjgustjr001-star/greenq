@@ -161,12 +161,12 @@ export default function ReportListPage() {
   };
 
   const deleteReport = async (report) => {
-    if (!window.confirm("리포트를 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("리포트를 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteReport(report.reportId);
     await reload();
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">리포트를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">리포트를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">

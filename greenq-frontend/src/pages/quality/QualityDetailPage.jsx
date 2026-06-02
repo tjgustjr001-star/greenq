@@ -30,12 +30,12 @@ export default function QualityDetailPage() {
   const isAdmin = (getCurrentUser().role || getCurrentUser().roleCode) === "ADMIN";
   const { data: measurement, loading, error } = useApiData(() => greenqApi.measurement(measurementId), [measurementId]);
   const deleteMeasurement = async () => {
-    if (!window.confirm("실측 데이터를 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("실측 데이터를 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteMeasurement(measurementId);
     navigate("/quality");
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">실측 상세를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">실측 상세를 불러오는 중입니다...</p></div>;
   if (error || !measurement) return <EmptyState title="실측 데이터를 찾을 수 없습니다." description={error || "잘못된 실측 ID입니다."} action={<button className="primary-button" onClick={() => navigate("/quality")}>실측 목록으로</button>} />;
 
   const items = asArray(measurement.items);

@@ -53,7 +53,7 @@ export default function IssueListPage() {
   };
 
   const deleteIssue = async (issue) => {
-    if (!window.confirm("부적합 이력을 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("부적합 이력을 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteIssue(issue.issueType, getIssueRawId(issue));
     await reload();
   };
@@ -67,7 +67,7 @@ export default function IssueListPage() {
   if (loading) {
     return (
       <div className="panel">
-        <p className="muted-text">부적합 이력을 DB에서 불러오는 중입니다...</p>
+        <p className="muted-text">부적합 이력을 불러오는 중입니다...</p>
       </div>
     );
   }
@@ -77,7 +77,7 @@ export default function IssueListPage() {
       <PageHeader
         eyebrow="Nonconformity"
         title="부적합 이력"
-        description="DB에 저장된 환경 부적합과 품질 부적합을 통합 조회합니다."
+        description="환경 부적합과 품질 부적합 이력을 통합 조회합니다."
       />
 
       {error && <div className="notice-box">{error}</div>}

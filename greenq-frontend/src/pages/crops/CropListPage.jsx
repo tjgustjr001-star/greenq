@@ -83,12 +83,12 @@ export default function CropListPage() {
   };
 
   const deleteCrop = async (crop) => {
-    if (!window.confirm("작물을 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("작물을 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteCrop(crop.cropId);
     await reload();
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">작물 데이터를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">작물 데이터를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">

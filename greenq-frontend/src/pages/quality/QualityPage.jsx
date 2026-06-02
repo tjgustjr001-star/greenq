@@ -58,12 +58,12 @@ export default function QualityPage() {
   };
 
   const deleteMeasurement = async (m) => {
-    if (!window.confirm("실측 데이터를 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("실측 데이터를 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteMeasurement(m.measurementId);
     await reload();
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">실측 데이터를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">실측 데이터를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
