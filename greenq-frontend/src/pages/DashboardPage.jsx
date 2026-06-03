@@ -26,7 +26,7 @@ export default function DashboardPage() {
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Dashboard" title="대시보드" description="식물공장 운영 상태, 환경 이탈, 품질 실측 결과를 한눈에 확인합니다." actions={<><button className="secondary-button" onClick={() => navigate("/environment")}>환경 모니터링</button><button className="primary-button" onClick={() => navigate("/quality")}>실측 입력</button></>} />
+      <PageHeader eyebrow="Dashboard" title="대시보드" description="DB에 저장된 식물공장 운영 상태, 환경 이탈, 품질 실측 결과를 한눈에 확인합니다." actions={<><button className="secondary-button" onClick={() => navigate("/environment")}>환경 모니터링</button><button className="primary-button" onClick={() => navigate("/quality")}>실측 입력</button></>} />
       <section className="stat-grid dashboard-stat-grid">
         <StatCard label="운영 중 배치" value={data?.growingBatchCount ?? 0}  />
         <StatCard label="미확인 환경 알림" value={data?.unreadEnvAlertCount ?? 0} tone="red" />

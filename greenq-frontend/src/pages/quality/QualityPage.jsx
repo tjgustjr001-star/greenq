@@ -1,8 +1,9 @@
 import { Plus } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { greenqApi } from "../../api/greenqApi.js";
 import ActionMenu from "../../components/ActionMenu.jsx";
+import ConfirmDialog from "../../components/ConfirmDialog.jsx";
 import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { labelOf } from "../../data/displayLabels.js";
@@ -11,14 +12,6 @@ import { getCurrentUser } from "../../utils/auth.js";
 import { batchDisplayLabel } from "../../utils/batchLabel.js";
 
 const statusOrder = ["NORMAL", "CAUTION", "FAIL", "MISSING", "SKIPPED"];
-
-const statusCardMeta = {
-  NORMAL: { title: "정상", hint: "품질 판정" },
-  CAUTION: { title: "주의", hint: "품질 판정" },
-  FAIL: { title: "경고", hint: "품질 판정" },
-  MISSING: { title: "미입력", hint: "확인 필요" },
-  SKIPPED: { title: "판정 제외", hint: "대상 아님" },
-};
 
 function countByStatus(rows) {
   return rows.reduce((acc, row) => {
@@ -32,6 +25,9 @@ export default function QualityPage() {
   const navigate = useNavigate();
   const isAdmin = (getCurrentUser().role || getCurrentUser().roleCode) === "ADMIN";
   const [searchParams, setSearchParams] = useSearchParams();
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState("");
   const batchId = searchParams.get("batchId") || "";
   const status = searchParams.get("status") || "";
 
@@ -57,13 +53,22 @@ export default function QualityPage() {
     setSearchParams(next);
   };
 
-  const deleteMeasurement = async (m) => {
-    if (!window.confirm("실측 데이터를 임시 삭제 처리합니다.")) return;
-    await greenqApi.deleteMeasurement(m.measurementId);
-    await reload();
+  const deleteMeasurement = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setActionError("");
+    try {
+      await greenqApi.deleteMeasurement(deleteTarget.measurementId);
+      setDeleteTarget(null);
+      await reload();
+    } catch (err) {
+      setActionError(err?.message || "실측 데이터 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">실측 데이터를 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">실측 데이터를 DB에서 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
@@ -74,6 +79,7 @@ export default function QualityPage() {
         actions={<button className="primary-button" onClick={() => navigate(`/quality/new${batchId ? `?batchId=${batchId}` : ""}`)}><Plus size={16} />실측 입력</button>}
       />
       {error && <div className="notice-box">{error}</div>}
+      {actionError && <div className="notice-box danger">{actionError}</div>}
 
       <div className="panel quality-filter-panel">
         <div className="quality-filter-grid">
@@ -83,23 +89,9 @@ export default function QualityPage() {
         </div>
       </div>
 
-      <section className="stat-grid six compact quality-stat-grid">
-        <div className="stat-card">
-          <p>전체</p>
-          <strong>{measurements.length}</strong>
-          <span>실측 데이터</span>
-        </div>
-        {statusOrder.map((statusCode) => {
-          const meta = statusCardMeta[statusCode] || { title: labelOf(statusCode), hint: "품질 판정" };
-
-          return (
-            <div className="stat-card" key={statusCode}>
-              <p>{meta.title}</p>
-              <strong>{counts[statusCode] || 0}</strong>
-              <span>{meta.hint}</span>
-            </div>
-          );
-        })}
+      <section className="stat-grid five compact">
+        <div className="stat-card"><p>전체</p><strong>{measurements.length}</strong><span>실측 데이터</span></div>
+        {statusOrder.map((s) => <div className="stat-card" key={s}><p>{labelOf(s)}</p><strong>{counts[s] || 0}</strong><span>품질 판정</span></div>)}
       </section>
 
       <div className="panel table-panel">
@@ -112,13 +104,24 @@ export default function QualityPage() {
                 <td>{m.measuredAt}</td>
                 <td className="text-left"><button className="link-cell" onClick={() => navigate(`/quality/${m.measurementId}`)}><strong>{m.zoneName || "-"}</strong><br /><small>{batchDisplayLabel(m, { includeZone: false, includeCrop: false })}</small></button></td>
                 <td>{m.cropName || "-"}</td><td>{m.sampleCount}</td><td>{m.plantHeight ?? "-"}</td><td>{m.leafWidth ?? "-"}</td><td>{m.leafLength ?? "-"}</td><td>{m.freshWeight ?? "-"}</td><td><StatusBadge value={m.qualityStatus} /></td>
-                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/quality/${m.measurementId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => deleteMeasurement(m) }]} /></td>
+                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/quality/${m.measurementId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => setDeleteTarget(m) }]} /></td>
               </tr>
             ))}
             {measurements.length === 0 && <tr><td colSpan={10} className="empty-table-cell">조회 조건에 맞는 실측 데이터가 없습니다.</td></tr>}
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="실측 데이터 임시 삭제"
+        description={`${deleteTarget?.batchName || deleteTarget?.zoneName || "선택한 실측 데이터"}를 삭제 데이터 관리로 이동합니다.`}
+        confirmLabel="임시 삭제"
+        danger
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteMeasurement}
+      />
     </div>
   );
 }

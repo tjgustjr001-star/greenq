@@ -6,17 +6,12 @@ import EmptyState from "../../components/EmptyState.jsx";
 import Modal from "../../components/Modal.jsx";
 import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { growthStageLabelOf } from "../../data/qualityOptions.js";
 import { alertStatusLabel, issueStatusLabel } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
 
 function normalizeType(value) { return String(value || "").toLowerCase() === "quality" ? "quality" : "env"; }
 function currentUserId(user) { return user?.userId || user?.id || null; }
-function displayIssueValue(issue) {
-  const value = issue?.measuredValueDisplay ?? issue?.measuredTextValue ?? issue?.measuredValue ?? "-";
-  return issue?.itemCode === "GROWTH_STAGE" ? growthStageLabelOf(value) : value;
-}
 
 export default function IssueDetailPage() {
   const { issueType, issueId } = useParams();
@@ -74,12 +69,12 @@ export default function IssueDetailPage() {
   };
 
   const deleteIssue = async () => {
-    if (!window.confirm("부적합 이력을 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("부적합 이력을 DB에서 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteIssue(type, issueId);
     navigate("/issues");
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">부적합 상세를 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">부적합 상세를 DB에서 불러오는 중입니다...</p></div>;
   if (error || !issue) return <EmptyState title="부적합 이력을 찾을 수 없습니다." description={error || "잘못된 부적합 ID입니다."} action={<button className="primary-button" onClick={() => navigate("/issues")}>부적합 목록으로</button>} />;
 
   const activeAlertCount = alerts.filter((alert) => String(alert.alertStatus).toUpperCase() !== "CLOSED").length;
@@ -91,7 +86,7 @@ export default function IssueDetailPage() {
       <PageHeader
         eyebrow="Nonconformity Detail"
         title={`${issue.zoneName} · ${issue.itemName}`}
-        description="부적합 상세와 조치/검토 이력을 확인합니다."
+        description="DB에 저장된 부적합 상세와 조치/검토 이력을 확인합니다."
         actions={<><button className="secondary-button" onClick={() => navigate("/issues")}>목록으로</button>{type === "env" && <button className="primary-button" onClick={() => setActionModalOpen(true)}><Plus size={16} />조치 메모</button>}{type === "quality" && <button className="primary-button" onClick={() => setReviewModalOpen(true)}><Plus size={16} />검토 메모</button>}{isAdmin && <button className="danger-button" onClick={deleteIssue}>삭제</button>}</>}
       />
 
@@ -101,7 +96,7 @@ export default function IssueDetailPage() {
       </div>
 
       <section className="content-grid two">
-        <div className="panel info-panel"><h3>부적합 정보</h3><dl><dt>측정값</dt><dd>{displayIssueValue(issue)}</dd><dt>기준 최소</dt><dd>{issue.standardMin ?? "-"}</dd><dt>기준 최대</dt><dd>{issue.standardMax ?? "-"}</dd><dt>이탈률</dt><dd>{issue.deviationRate ?? "-"}</dd>{type === "quality" && <><dt>실측 ID</dt><dd>{issue.measurementId ? <button className="text-button" onClick={() => navigate(`/quality/${issue.measurementId}`)}>#{issue.measurementId} 실측 상세</button> : "-"}</dd><dt>검토 이력</dt><dd>{issue.reviewCount ?? reviews.length}건</dd><dt>최근 검토</dt><dd>{issue.latestReviewAt || "-"}</dd></>}</dl></div>
+        <div className="panel info-panel"><h3>부적합 정보</h3><dl><dt>측정값</dt><dd>{issue.measuredValueDisplay ?? issue.measuredTextValue ?? issue.measuredValue ?? "-"}</dd><dt>기준 최소</dt><dd>{issue.standardMin ?? "-"}</dd><dt>기준 최대</dt><dd>{issue.standardMax ?? "-"}</dd><dt>이탈률</dt><dd>{issue.deviationRate ?? "-"}</dd>{type === "quality" && <><dt>실측 ID</dt><dd>{issue.measurementId ? <button className="text-button" onClick={() => navigate(`/quality/${issue.measurementId}`)}>#{issue.measurementId} 실측 상세</button> : "-"}</dd><dt>검토 이력</dt><dd>{issue.reviewCount ?? reviews.length}건</dd><dt>최근 검토</dt><dd>{issue.latestReviewAt || "-"}</dd></>}</dl></div>
         <div className="panel info-panel"><h3>{type === "quality" ? "품질 검토/리포트 연결" : "권장 조치"}</h3>{type === "quality" ? <dl><dt>현재 상태</dt><dd>{issueStatusLabel("quality", issue.status)}</dd><dt>리포트 반영</dt><dd>{qualityReflected ? "반영 완료" : "미반영"}</dd><dt>다음 작업</dt><dd>{qualityReflected ? "리포트 재발급 시 품질 요약에 반영됩니다." : "검토 메모에서 상태를 리포트반영으로 저장하세요."}</dd></dl> : <p>{issue.guide || issue.guideMessage || "-"}</p>}</div>
       </section>
 

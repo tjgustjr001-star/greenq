@@ -313,8 +313,8 @@ export const measurementItemMaster = [
   { itemCode: "LEAF_WIDTH", standardType: "QUALITY", itemGroup: "GROWTH", itemName: "엽폭", valueType: "NUMBER", unit: "cm", defaultUseYn: "Y" },
   { itemCode: "LEAF_LENGTH", standardType: "QUALITY", itemGroup: "GROWTH", itemName: "엽장", valueType: "NUMBER", unit: "cm", defaultUseYn: "Y" },
   { itemCode: "FRESH_WEIGHT", standardType: "QUALITY", itemGroup: "GROWTH", itemName: "생체중", valueType: "NUMBER", unit: "g", defaultUseYn: "Y" },
-  { itemCode: "LEAF_COLOR", standardType: "QUALITY", itemGroup: "QUALITY_TEXT", itemName: "엽색", valueType: "CATEGORY", unit: "category", defaultUseYn: "Y" },
-  { itemCode: "GROWTH_STAGE", standardType: "QUALITY", itemGroup: "QUALITY_TEXT", itemName: "생육단계", valueType: "CATEGORY", unit: "category", defaultUseYn: "Y" },
+  { itemCode: "LEAF_COLOR", standardType: "QUALITY", itemGroup: "QUALITY_TEXT", itemName: "엽색", valueType: "TEXT", unit: "text", defaultUseYn: "Y" },
+  { itemCode: "GROWTH_STAGE", standardType: "QUALITY", itemGroup: "QUALITY_TEXT", itemName: "생장단계", valueType: "CATEGORY", unit: "category", defaultUseYn: "Y" },
 ];
 
 export const actionTemplates = [

@@ -13,15 +13,15 @@ const STATUS_LABELS = {
   NORMAL: "정상",
   CAUTION: "주의",
   FAIL: "경고",
-  MISSING: "미입력",
-  SKIPPED: "판정 제외",
+  MISSING: "누락",
+  SKIPPED: "제외",
 };
 
 const TREND_METRICS = [
-  { key: "temperature", label: "온도", unit: "℃", digit: 1 },
-  { key: "humidity", label: "습도", unit: "%", digit: 1 },
-  { key: "ph", label: "pH", unit: "", digit: 2 },
-  { key: "ec", label: "EC", unit: "", digit: 2 },
+  { key: "temperature", label: "온도", unit: "℃" },
+  { key: "humidity", label: "습도", unit: "%" },
+  { key: "ph", label: "pH", unit: "" },
+  { key: "ec", label: "EC", unit: "" },
 ];
 
 function parseCondition(json) {
@@ -64,16 +64,6 @@ function formatDateLabel(value) {
   return `${mm}.${dd} ${hh}:${min}`;
 }
 
-function formatAxisDateLabel(value) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "-";
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  return `${mm}.${dd} ${hh}시`;
-}
-
 function getMetricPoints(rows, metric) {
   return asList(rows)
     .map((row) => ({
@@ -106,8 +96,8 @@ function TrendMetricSummary({ metric, rows }) {
   return (
     <div className="report-trend-summary-card">
       <span>{metric.label}</span>
-      <strong>{formatNumber(stats.average, metric.digit)}{metric.unit}</strong>
-      <small>최저 {formatNumber(stats.min, metric.digit)}{metric.unit} · 최고 {formatNumber(stats.max, metric.digit)}{metric.unit}</small>
+      <strong>{formatNumber(stats.average)}{metric.unit}</strong>
+      <small>최저 {formatNumber(stats.min)}{metric.unit} · 최고 {formatNumber(stats.max)}{metric.unit}</small>
     </div>
   );
 }
@@ -133,49 +123,22 @@ function ReportTrendChart({ rows, metric }) {
   const stats = getMetricStats(points);
   const rawMin = stats.min;
   const rawMax = stats.max;
-  const valuePadding = Math.max(
-    (rawMax - rawMin) * 0.18,
-    metric.key === "ph" ? 0.12 : metric.key === "ec" ? 0.08 : 0.8,
-  );
+  const valuePadding = Math.max((rawMax - rawMin) * 0.16, metric.key === "ph" ? 0.15 : metric.key === "ec" ? 0.12 : 1);
   const minValue = rawMin - valuePadding;
   const maxValue = rawMax + valuePadding;
   const valueRange = maxValue - minValue || 1;
-  const minTime = points[0].time;
-  const maxTime = points[points.length - 1].time;
+  const minTime = Math.min(...points.map((point) => point.time));
+  const maxTime = Math.max(...points.map((point) => point.time));
   const timeRange = maxTime - minTime || 1;
-
-  const svgWidth = 320;
-  const svgHeight = 164;
-  const plotLeft = 8;
-  const plotRight = 312;
-  const plotTop = 18;
-  const plotBottom = 134;
-  const plotHeight = plotBottom - plotTop;
-  const midPoint = points[Math.floor(points.length / 2)];
+  const chartTop = 18;
+  const chartBottom = 142;
+  const chartHeight = chartBottom - chartTop;
   const midValue = (minValue + maxValue) / 2;
-
-  const plottedPoints = points.map((point) => {
-    const x = points.length === 1 ? svgWidth / 2 : plotLeft + ((point.time - minTime) / timeRange) * (plotRight - plotLeft);
-    const y = plotBottom - ((point.value - minValue) / valueRange) * plotHeight;
-    return {
-      ...point,
-      x,
-      y: Math.min(plotBottom, Math.max(plotTop, y)),
-    };
-  });
-
-  const linePath = plottedPoints
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(" ");
-  const areaPath = plottedPoints.length > 1
-    ? `${linePath} L ${plottedPoints[plottedPoints.length - 1].x.toFixed(2)} ${plotBottom} L ${plottedPoints[0].x.toFixed(2)} ${plotBottom} Z`
-    : "";
-  const markerPoints = plottedPoints.length === 1
-    ? []
-    : plottedPoints.length <= 28
-      ? plottedPoints
-      : [plottedPoints[0], plottedPoints[Math.floor(plottedPoints.length / 2)], plottedPoints[plottedPoints.length - 1]];
-  const latestPoint = plottedPoints[plottedPoints.length - 1];
+  const svgPoints = points.map((point) => {
+    const x = points.length === 1 ? 50 : ((point.time - minTime) / timeRange) * 100;
+    const y = chartBottom - ((point.value - minValue) / valueRange) * chartHeight;
+    return `${x},${Math.min(chartBottom, Math.max(chartTop, y))}`;
+  }).join(" ");
 
   return (
     <div className="report-trend-chart-card">
@@ -184,50 +147,25 @@ function ReportTrendChart({ rows, metric }) {
           <strong>{metric.label}</strong>
           <p>{formatDateLabel(stats.firstAt)} ~ {formatDateLabel(stats.lastAt)}</p>
         </div>
-        <span>평균 {formatNumber(stats.average, metric.digit)}{metric.unit}</span>
+        <span>평균 {formatNumber(stats.average)}{metric.unit}</span>
       </div>
       <div className="report-trend-chart-plot">
         <div className="report-trend-y-scale" aria-hidden="true">
-          <span>{formatNumber(maxValue, metric.digit)}{metric.unit}</span>
-          <span>{formatNumber(midValue, metric.digit)}{metric.unit}</span>
-          <span>{formatNumber(minValue, metric.digit)}{metric.unit}</span>
+          <span>{formatNumber(maxValue)}{metric.unit}</span>
+          <span>{formatNumber(midValue)}{metric.unit}</span>
+          <span>{formatNumber(minValue)}{metric.unit}</span>
         </div>
-        <div className="report-trend-chart-body">
-          <svg
-            className="report-trend-line-chart"
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            preserveAspectRatio="none"
-            aria-label={`${metric.label} 시간대별 추이`}
-          >
-            <line className="trend-grid-line" x1="0" y1={plotTop} x2={svgWidth} y2={plotTop} />
-            <line className="trend-grid-line" x1="0" y1={(plotTop + plotBottom) / 2} x2={svgWidth} y2={(plotTop + plotBottom) / 2} />
-            <line className="trend-grid-line" x1="0" y1={plotBottom} x2={svgWidth} y2={plotBottom} />
-            {plottedPoints.length > 1 && <path className="trend-area" d={areaPath} />}
-            {plottedPoints.length > 1 && <path className="trend-line" d={linePath} />}
-            {points.length === 1 && latestPoint && (
-              <circle className="trend-marker latest" cx={latestPoint.x} cy={latestPoint.y} r="5" />
-            )}
-            {markerPoints.map((point, index) => (
-              <circle
-                key={`${point.time}-${index}`}
-                className={`trend-marker${point.time === latestPoint?.time ? " latest" : ""}`}
-                cx={point.x}
-                cy={point.y}
-                r={point.time === latestPoint?.time ? "4.6" : "3.4"}
-              />
-            ))}
-          </svg>
-          <div className="report-trend-x-scale" aria-hidden="true">
-            <span>{formatAxisDateLabel(points[0].measuredAt)}</span>
-            <span>{formatAxisDateLabel(midPoint?.measuredAt)}</span>
-            <span>{formatAxisDateLabel(points[points.length - 1].measuredAt)}</span>
-          </div>
-        </div>
+        <svg className="report-trend-line-chart" viewBox="0 0 100 160" preserveAspectRatio="none" aria-label={`${metric.label} 기간 추이`}>
+          <line x1="0" y1={chartTop} x2="100" y2={chartTop} />
+          <line x1="0" y1="80" x2="100" y2="80" />
+          <line x1="0" y1={chartBottom} x2="100" y2={chartBottom} />
+          <polyline points={svgPoints} />
+        </svg>
       </div>
-      <div className="report-trend-stat-row">
-        <span>최저 {formatNumber(rawMin, metric.digit)}{metric.unit}</span>
-        <span>최고 {formatNumber(rawMax, metric.digit)}{metric.unit}</span>
-        <span>최근 {formatNumber(stats.latest, metric.digit)}{metric.unit}</span>
+      <div className="report-trend-chart-foot">
+        <span>최저 {formatNumber(rawMin)}{metric.unit}</span>
+        <span>최고 {formatNumber(rawMax)}{metric.unit}</span>
+        <span>최근 {formatNumber(stats.latest)}{metric.unit}</span>
       </div>
     </div>
   );
@@ -276,7 +214,7 @@ function StatusDistributionPanel({ title, rows }) {
     <div className="panel report-visual-panel">
       <div className="panel-head compact">
         <h3>{title}</h3>
-        <p>전체 {total}건 기준</p>
+        <p>전체 {total}건 기준 상태 비율</p>
       </div>
       {total === 0 ? (
         <div className="report-empty-visual">집계할 데이터가 없습니다.</div>
@@ -352,12 +290,12 @@ export default function ReportDetailPage() {
   const { data: report, loading, error } = useApiData(() => greenqApi.report(reportId), [reportId]);
   const condition = useMemo(() => parseCondition(report?.generatedConditionJson), [report]);
   const deleteReport = async () => {
-    if (!window.confirm("리포트를 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("리포트를 DB에서 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteReport(reportId);
     navigate("/reports");
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">리포트를 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">리포트를 DB에서 불러오는 중입니다...</p></div>;
   if (error || !report) return <EmptyState title="리포트를 찾을 수 없습니다." description={error || "잘못된 리포트 ID입니다."} action={<button className="primary-button" onClick={() => navigate("/reports")}>리포트 목록으로</button>} />;
 
   return (
@@ -365,7 +303,7 @@ export default function ReportDetailPage() {
       <PageHeader
         eyebrow="Report Detail"
         title={report.reportTitle}
-     
+        description="발급 당시 조건으로 자동 집계되어 저장된 리포트 스냅샷입니다."
         actions={<><button className="secondary-button" onClick={() => navigate("/reports")}>목록으로</button>{isAdmin && <button className="danger-button" onClick={deleteReport}>삭제</button>}</>}
       />
 
@@ -406,55 +344,19 @@ export default function ReportDetailPage() {
         <p>{report.guideSummary || "-"}</p>
       </div>
 
-      <div className="panel report-condition-panel">
-  <div className="panel-head">
-    <h3>발급 조건 스냅샷</h3>
-  </div>
-
-  <div className="report-condition-grid">
-    <div>
-      <span>리포트 유형</span>
-      <strong>{labelOf(condition?.reportType || report.reportType)}</strong>
-    </div>
-
-    <div>
-      <span>범위</span>
-      <strong>{labelOf(condition?.reportScope || report.reportScope)}</strong>
-    </div>
-
-    <div>
-      <span>대상</span>
-      <strong>{condition?.targetName || report.targetName}</strong>
-    </div>
-
-    <div>
-      <span>기간</span>
-      <strong>
-        {report.startDate} ~ {report.endDate}
-      </strong>
-    </div>
-
-    <div>
-      <span>평균 온도</span>
-      <strong>{condition?.envAvgTemp || "-"}℃</strong>
-    </div>
-
-    <div>
-      <span>평균 습도</span>
-      <strong>{condition?.envAvgHumidity || "-"}%</strong>
-    </div>
-
-    <div>
-      <span>평균 pH</span>
-      <strong>{condition?.envAvgPh || "-"}</strong>
-    </div>
-
-    <div>
-      <span>평균 EC</span>
-      <strong>{condition?.envAvgEc || "-"}</strong>
-    </div>
-  </div>
-</div>
+      <div className="panel">
+        <div className="panel-head"><h3>발급 조건 스냅샷</h3><p>리포트 발급 당시 필터와 주요 집계값입니다.</p></div>
+        <div className="report-condition-grid">
+          <div><span>리포트 유형</span><strong>{labelOf(condition?.reportType || report.reportType)}</strong></div>
+          <div><span>범위</span><strong>{labelOf(condition?.reportScope || report.reportScope)}</strong></div>
+          <div><span>대상</span><strong>{condition?.targetName || report.targetName}</strong></div>
+          <div><span>기간</span><strong>{report.startDate} ~ {report.endDate}</strong></div>
+          <div><span>평균 온도</span><strong>{condition?.envAvgTemp || "-"}℃</strong></div>
+          <div><span>평균 습도</span><strong>{condition?.envAvgHumidity || "-"}%</strong></div>
+          <div><span>평균 pH</span><strong>{condition?.envAvgPh || "-"}</strong></div>
+          <div><span>평균 EC</span><strong>{condition?.envAvgEc || "-"}</strong></div>
+        </div>
+      </div>
     </div>
   );
 }

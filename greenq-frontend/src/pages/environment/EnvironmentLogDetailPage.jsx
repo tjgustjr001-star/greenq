@@ -74,12 +74,12 @@ export default function EnvironmentLogDetailPage() {
   }), [items]);
 
   const deleteLog = async () => {
-    if (!window.confirm("환경 데이터를 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("환경 데이터를 DB에서 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteEnvironmentLog(envLogId);
     navigate("/environment");
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">환경 로그를 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">환경 로그를 DB에서 불러오는 중입니다...</p></div>;
   if (error || !log) {
     return (
       <EmptyState
@@ -95,7 +95,7 @@ export default function EnvironmentLogDetailPage() {
       <PageHeader
         eyebrow="Environment Log"
         title={`${log.batchName} 환경 로그`}
-        description="환경 로그와 항목별 판정 결과를 확인합니다."
+        description="DB에 저장된 환경 로그와 항목별 판정 결과를 확인합니다."
         actions={(
           <>
             <button className="secondary-button" onClick={() => navigate("/environment")}>목록으로</button>

@@ -2,8 +2,8 @@ export const evaluationStatusLabels = {
   NORMAL: "정상",
   CAUTION: "주의",
   FAIL: "경고",
-  MISSING: "미입력",
-  SKIPPED: "판정 제외",
+  MISSING: "누락",
+  SKIPPED: "제외",
 };
 
 export const legacyJudgmentStatusAliases = {
@@ -79,13 +79,8 @@ export const issueTypeLabels = {
 
 export const growthStageLabels = {
   GERMINATION: "발아기",
-  SEEDLING: "육묘기",
-  TRANSPLANTING: "정식기",
-  ROOTING: "활착기",
   GROWING: "생육기",
   HARVEST: "수확기",
-  END: "종료",
-  ETC: "기타",
 };
 
 export function canonicalStatusValue(value) {

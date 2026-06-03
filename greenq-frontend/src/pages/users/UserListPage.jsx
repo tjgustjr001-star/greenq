@@ -45,14 +45,14 @@ export default function UserListPage() {
     await reload();
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">사용자 데이터를 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">사용자 데이터를 DB에서 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
       <PageHeader
         eyebrow="User"
         title="사용자 관리"
-        description="관리자와 작업자 계정을 조회합니다."
+        description="DB에 저장된 관리자와 작업자 계정을 조회합니다."
         actions={isAdmin ? <button className="primary-button" onClick={openModal}><Plus size={16} />사용자 등록</button> : null}
       />
       {!isAdmin && <div className="notice-box">작업자 계정에서는 사용자 관리 기능이 제한됩니다.</div>}

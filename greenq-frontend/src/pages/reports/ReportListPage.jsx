@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { greenqApi } from "../../api/greenqApi.js";
 import ActionMenu from "../../components/ActionMenu.jsx";
+import ConfirmDialog from "../../components/ConfirmDialog.jsx";
 import Drawer from "../../components/Drawer.jsx";
 import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
@@ -82,6 +83,9 @@ export default function ReportListPage() {
   const reports = asArray(data?.reports);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [actionError, setActionError] = useState("");
   const [form, setForm] = useState({
     reportType: "DAILY",
     reportScope: batchId ? "BATCH" : "ALL",
@@ -160,13 +164,22 @@ export default function ReportListPage() {
     }
   };
 
-  const deleteReport = async (report) => {
-    if (!window.confirm("리포트를 임시 삭제 처리합니다.")) return;
-    await greenqApi.deleteReport(report.reportId);
-    await reload();
+  const deleteReport = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setActionError("");
+    try {
+      await greenqApi.deleteReport(deleteTarget.reportId);
+      setDeleteTarget(null);
+      await reload();
+    } catch (err) {
+      setActionError(err?.message || "리포트 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">리포트를 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">리포트를 DB에서 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
@@ -178,6 +191,7 @@ export default function ReportListPage() {
       />
 
       {error && <div className="notice-box">{error}</div>}
+      {actionError && <div className="notice-box danger">{actionError}</div>}
       {batchId && <div className="notice-box">현재 batchId={batchId} 기준 리포트 발급 진입 URL입니다.</div>}
 
       <div className="report-summary-strip">
@@ -191,7 +205,7 @@ export default function ReportListPage() {
           <h3>리포트 목록</h3>
           <p>리포트 원본은 수정하지 않고, 같은 조건으로 다시 발급하면 버전이 증가합니다.</p>
         </div>
-        <table className="report-list-table">
+        <table>
           <thead>
             <tr><th>리포트명</th><th>유형</th><th>범위</th><th>대상</th><th>기간</th><th>버전</th><th>상태</th><th>발급일</th><th>관리</th></tr>
           </thead>
@@ -206,7 +220,7 @@ export default function ReportListPage() {
                 <td>v{report.reportVersion || 1}</td>
                 <td><StatusBadge value={report.reportStatus} /></td>
                 <td>{report.createdAt}</td>
-                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/reports/${report.reportId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => deleteReport(report) }]} /></td>
+                <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/reports/${report.reportId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => setDeleteTarget(report) }]} /></td>
               </tr>
             ))}
           </tbody>
@@ -270,6 +284,17 @@ export default function ReportListPage() {
           </div>
         </div>
       </Drawer>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="리포트 임시 삭제"
+        description={`${deleteTarget?.reportTitle || "선택한 리포트"}를 삭제 데이터 관리로 이동합니다.`}
+        confirmLabel="임시 삭제"
+        danger
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteReport}
+      />
     </div>
   );
 }

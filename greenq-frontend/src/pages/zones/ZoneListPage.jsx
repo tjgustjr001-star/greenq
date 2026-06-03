@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { greenqApi } from "../../api/greenqApi.js";
 import ActionMenu from "../../components/ActionMenu.jsx";
+import ConfirmDialog from "../../components/ConfirmDialog.jsx";
 import Modal from "../../components/Modal.jsx";
 import PageHeader from "../../components/PageHeader.jsx";
 import StatCard from "../../components/StatCard.jsx";
@@ -20,6 +21,9 @@ export default function ZoneListPage() {
   const zoneRows = asArray(data);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState("");
   const isEdit = Boolean(form.zoneId);
 
   const updateForm = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -34,7 +38,20 @@ export default function ZoneListPage() {
     closeModal();
     await reload();
   };
-  const deleteZone = async (zone) => { if (!window.confirm("구역을 DB에서 임시 삭제 처리합니다.")) return; await greenqApi.deleteZone(zone.zoneId); await reload(); };
+  const deleteZone = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setActionError("");
+    try {
+      await greenqApi.deleteZone(deleteTarget.zoneId);
+      setDeleteTarget(null);
+      await reload();
+    } catch (err) {
+      setActionError(err?.message || "구역 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) return <div className="panel"><p className="muted-text">구역 데이터를 DB에서 불러오는 중입니다...</p></div>;
 
@@ -43,6 +60,7 @@ export default function ZoneListPage() {
       <PageHeader eyebrow="Zone & Batch" title="구역/배치 관리" description="DB에 저장된 재배 구역과 현재 배치 상태를 조회합니다." actions={isAdmin ? <button className="primary-button" onClick={startCreate}><Plus size={16} />구역 등록</button> : null} />
       {!isAdmin && <div className="notice-box">작업자는 구역 상태를 조회할 수 있습니다.</div>}
       {error && <div className="notice-box">{error}</div>}
+      {actionError && <div className="notice-box danger">{actionError}</div>}
       <section className="stat-grid three"><StatCard label="전체 구역" value={zoneRows.length} /><StatCard label="운영 구역" value={zoneRows.filter((z) => z.zoneStatus === "ACTIVE").length} tone="green" /><StatCard label="점검/비활성" value={zoneRows.filter((z) => z.zoneStatus !== "ACTIVE").length} tone="orange" /></section>
 
       <Modal
@@ -61,7 +79,18 @@ export default function ZoneListPage() {
         </div>
       </Modal>
 
-      <div className="panel"><table><thead><tr><th>구역명</th><th>위치</th><th>면적</th><th>현재 배치</th><th>상태</th><th>관리</th></tr></thead><tbody>{zoneRows.map((zone) => <tr key={zone.zoneId}><td><button className="link-cell" onClick={() => navigate(`/zones/${zone.zoneId}`)}><strong>{zone.zoneName}</strong></button></td><td>{zone.locationDesc || "-"}</td><td>{zone.areaSize ?? "-"}㎡</td><td>{zone.currentBatch || "-"}</td><td><StatusBadge value={zone.zoneStatus} /></td><td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/zones/${zone.zoneId}`) }, isAdmin && { label: "수정", kind: "edit", onClick: () => startEdit(zone) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => deleteZone(zone) }]} /></td></tr>)}</tbody></table></div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="구역 임시 삭제"
+        description={`${deleteTarget?.zoneName || "선택한 구역"}을 삭제 데이터 관리로 이동합니다.`}
+        confirmLabel="임시 삭제"
+        danger
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteZone}
+      />
+
+      <div className="panel"><table><thead><tr><th>구역명</th><th>위치</th><th>면적</th><th>현재 배치</th><th>상태</th><th>관리</th></tr></thead><tbody>{zoneRows.map((zone) => <tr key={zone.zoneId}><td><button className="link-cell" onClick={() => navigate(`/zones/${zone.zoneId}`)}><strong>{zone.zoneName}</strong></button></td><td>{zone.locationDesc || "-"}</td><td>{zone.areaSize ?? "-"}㎡</td><td>{zone.currentBatch || "-"}</td><td><StatusBadge value={zone.zoneStatus} /></td><td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/zones/${zone.zoneId}`) }, isAdmin && { label: "수정", kind: "edit", onClick: () => startEdit(zone) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => setDeleteTarget(zone) }]} /></td></tr>)}</tbody></table></div>
     </div>
   );
 }

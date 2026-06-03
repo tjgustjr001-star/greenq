@@ -70,7 +70,6 @@ public class QualityEvaluationService {
         int cautionCount = 0;
         int failCount = 0;
         int missingCount = 0;
-        int skippedCount = 0;
         String overallStatus = "NORMAL";
         List<QualityEvaluationItem> draftItems = new ArrayList<>();
 
@@ -106,17 +105,14 @@ public class QualityEvaluationService {
                 case "FAIL" -> failCount++;
                 case "CAUTION" -> cautionCount++;
                 case "MISSING" -> missingCount++;
-                case "SKIPPED" -> skippedCount++;
                 default -> normalCount++;
             }
             draftItems.add(item);
         }
 
         if (standards.isEmpty()) {
-            overallStatus = "SKIPPED";
-            skippedCount = 1;
-        } else if (normalCount + cautionCount + failCount + missingCount == 0 && skippedCount > 0) {
-            overallStatus = "SKIPPED";
+            overallStatus = "MISSING";
+            missingCount = 1;
         }
 
         evaluation.setNormalItemCount(normalCount);
@@ -124,7 +120,7 @@ public class QualityEvaluationService {
         evaluation.setFailItemCount(failCount);
         evaluation.setMissingItemCount(missingCount);
         evaluation.setOverallStatus(overallStatus);
-        evaluation.setSummaryMessage(makeSummary(overallStatus, normalCount, cautionCount, failCount, missingCount, skippedCount));
+        evaluation.setSummaryMessage(makeSummary(overallStatus, normalCount, cautionCount, failCount, missingCount));
         QualityEvaluation savedEvaluation = evaluationRepository.save(evaluation);
 
         for (QualityEvaluationItem item : draftItems) {
@@ -199,11 +195,8 @@ public class QualityEvaluationService {
     }
 
     private QualityEvalResult evaluateNumber(QualityStandardSnapshot standard, BigDecimal value) {
-        if (value == null) {
+        if (value == null || standard.standardMin() == null || standard.standardMax() == null) {
             return new QualityEvalResult("MISSING", null, null);
-        }
-        if (standard.standardMin() == null || standard.standardMax() == null) {
-            return new QualityEvalResult("SKIPPED", null, null);
         }
 
         BigDecimal min = standard.standardMin();
@@ -232,33 +225,11 @@ public class QualityEvaluationService {
     }
 
     private QualityEvalResult evaluateText(QualityStandardSnapshot standard, String value) {
-        if (isBlank(value)) {
+        if (isBlank(value) || isBlank(standard.expectedTextValue())) {
             return new QualityEvalResult("MISSING", null, null);
         }
-        if (isBlank(standard.expectedTextValue())) {
-            return new QualityEvalResult("SKIPPED", null, null);
-        }
-        String expected = normalizeCategoryValue(standard.itemCode(), standard.expectedTextValue());
-        String measured = normalizeCategoryValue(standard.itemCode(), value);
-        boolean match = expected.equalsIgnoreCase(measured);
+        boolean match = standard.expectedTextValue().trim().equalsIgnoreCase(value.trim());
         return new QualityEvalResult(match ? "NORMAL" : "CAUTION", match ? BigDecimal.ZERO : null, match ? BigDecimal.ZERO : null);
-    }
-
-    private String normalizeCategoryValue(String itemCode, String value) {
-        if (value == null) return "";
-        String text = value.trim();
-        if (!"GROWTH_STAGE".equalsIgnoreCase(itemCode)) return text;
-        return switch (text.toUpperCase()) {
-            case "발아기", "GERMINATION" -> "GERMINATION";
-            case "육묘기", "SEEDLING" -> "SEEDLING";
-            case "정식기", "TRANSPLANTING" -> "TRANSPLANTING";
-            case "활착기", "ROOTING" -> "ROOTING";
-            case "생육기", "GROWING" -> "GROWING";
-            case "수확기", "HARVEST" -> "HARVEST";
-            case "종료", "END" -> "END";
-            case "기타", "ETC" -> "ETC";
-            default -> text;
-        };
     }
 
     private BigDecimal measuredNumericValue(GrowthMeasurement measurement, String itemCode) {
@@ -287,14 +258,11 @@ public class QualityEvaluationService {
         if ("FAIL".equals(status)) return 3;
         if ("CAUTION".equals(status)) return 2;
         if ("MISSING".equals(status)) return 1;
-        if ("SKIPPED".equals(status)) return -1;
         return 0;
     }
 
-    private String makeSummary(String overallStatus, int normalCount, int cautionCount, int failCount, int missingCount, int skippedCount) {
-        return "품질 종합 판정 " + overallStatus
-                + " - 정상 " + normalCount + "건, 주의 " + cautionCount + "건, 경고 " + failCount
-                + "건, 미입력 " + missingCount + "건, 판정 제외 " + skippedCount + "건";
+    private String makeSummary(String overallStatus, int normalCount, int cautionCount, int failCount, int missingCount) {
+        return "품질 종합 판정 " + overallStatus + " - 정상 " + normalCount + "건, 주의 " + cautionCount + "건, 경고 " + failCount + "건, 미측정 " + missingCount + "건";
     }
 
     private String makeAnalysisMessage(QualityEvaluationItem item) {
