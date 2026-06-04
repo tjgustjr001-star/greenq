@@ -57,7 +57,7 @@ export default function QualityDetailPage() {
       {measurement.summaryMessage && <div className="notice-box">{measurement.summaryMessage}</div>}
 
       <section className="content-grid two quality-detail-summary-grid">
-        <div className="panel info-panel quality-summary-panel"><div className="panel-head"><h3>평균 실측값</h3></div><dl><dt>초장</dt><dd>{fmtValue(measurement.plantHeight, "cm")}</dd><dt>엽폭</dt><dd>{fmtValue(measurement.leafWidth, "cm")}</dd><dt>엽장</dt><dd>{fmtValue(measurement.leafLength, "cm")}</dd><dt>생체중</dt><dd>{fmtValue(measurement.freshWeight, "g")}</dd><dt>엽색</dt><dd>{measurement.leafColor || "-"}</dd><dt>생육단계</dt><dd>{measurement.growthStage || "-"}</dd></dl></div>
+        <div className="panel info-panel quality-summary-panel"><div className="panel-head"><h3>평균 실측값</h3></div><dl><dt>초장</dt><dd>{fmtValue(measurement.plantHeight, "cm")}</dd><dt>엽폭</dt><dd>{fmtValue(measurement.leafWidth, "cm")}</dd><dt>엽장</dt><dd>{fmtValue(measurement.leafLength, "cm")}</dd><dt>생체중</dt><dd>{fmtValue(measurement.freshWeight, "g")}</dd><dt>엽색</dt><dd>{measurement.leafColor || "-"}</dd><dt>생육단계</dt><dd>{labelOf(measurement.growthStage)}</dd></dl></div>
         <div className="panel info-panel quality-summary-panel"><div className="panel-head"><h3>품질 평가 기준 연결</h3></div><dl><dt>품질 평가 ID</dt><dd>{measurement.qualityEvalId || "-"}</dd><dt>평가 상태</dt><dd><StatusBadge value={measurement.overallStatus || measurement.qualityStatus} /></dd><dt>리포트 반영</dt><dd>{reflected ? "반영 완료" : "검토 후 반영 필요"}</dd><dt>검토 이력</dt><dd>{reviews.length}건</dd></dl></div>
       </section>
 

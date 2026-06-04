@@ -130,15 +130,34 @@ function ReportTrendChart({ rows, metric }) {
   const minTime = Math.min(...points.map((point) => point.time));
   const maxTime = Math.max(...points.map((point) => point.time));
   const timeRange = maxTime - minTime || 1;
-  const chartTop = 18;
-  const chartBottom = 142;
+  const width = 640;
+  const height = 230;
+  const chartTop = 22;
+  const chartBottom = 176;
+  const chartLeft = 62;
+  const chartRight = 620;
   const chartHeight = chartBottom - chartTop;
+  const chartWidth = chartRight - chartLeft;
   const midValue = (minValue + maxValue) / 2;
-  const svgPoints = points.map((point) => {
-    const x = points.length === 1 ? 50 : ((point.time - minTime) / timeRange) * 100;
-    const y = chartBottom - ((point.value - minValue) / valueRange) * chartHeight;
-    return `${x},${Math.min(chartBottom, Math.max(chartTop, y))}`;
-  }).join(" ");
+
+  const xFor = (point) => points.length === 1 ? (chartLeft + chartRight) / 2 : chartLeft + ((point.time - minTime) / timeRange) * chartWidth;
+  const yFor = (value) => {
+    const y = chartBottom - ((value - minValue) / valueRange) * chartHeight;
+    return Math.min(chartBottom, Math.max(chartTop, y));
+  };
+  const linePoints = points.map((point) => `${xFor(point)},${yFor(point.value)}`).join(" ");
+  const areaPoints = points.length > 1 ? `${chartLeft},${chartBottom} ${linePoints} ${chartRight},${chartBottom}` : "";
+  const yTicks = [
+    { value: maxValue, y: chartTop },
+    { value: midValue, y: chartTop + chartHeight / 2 },
+    { value: minValue, y: chartBottom },
+  ];
+  const tickIndexes = points.length === 1 ? [0] : points.length === 2 ? [0, 1] : [0, Math.floor((points.length - 1) / 2), points.length - 1];
+  const xTicks = [...new Set(tickIndexes)].map((index) => {
+    const point = points[index];
+    return { x: xFor(point), label: formatDateLabel(point.measuredAt) };
+  });
+  const singlePointY = points.length === 1 ? yFor(points[0].value) : null;
 
   return (
     <div className="report-trend-chart-card">
@@ -150,16 +169,32 @@ function ReportTrendChart({ rows, metric }) {
         <span>평균 {formatNumber(stats.average)}{metric.unit}</span>
       </div>
       <div className="report-trend-chart-plot">
-        <div className="report-trend-y-scale" aria-hidden="true">
-          <span>{formatNumber(maxValue)}{metric.unit}</span>
-          <span>{formatNumber(midValue)}{metric.unit}</span>
-          <span>{formatNumber(minValue)}{metric.unit}</span>
-        </div>
-        <svg className="report-trend-line-chart" viewBox="0 0 100 160" preserveAspectRatio="none" aria-label={`${metric.label} 기간 추이`}>
-          <line x1="0" y1={chartTop} x2="100" y2={chartTop} />
-          <line x1="0" y1="80" x2="100" y2="80" />
-          <line x1="0" y1={chartBottom} x2="100" y2={chartBottom} />
-          <polyline points={svgPoints} />
+        <svg className="report-trend-line-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${metric.label} 기간 추이`}>
+          <defs>
+            <linearGradient id={`trend-area-${metric.key}`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="rgba(69, 132, 86, 0.24)" />
+              <stop offset="100%" stopColor="rgba(69, 132, 86, 0.02)" />
+            </linearGradient>
+          </defs>
+          {yTicks.map((tick) => (
+            <g key={tick.y}>
+              <line className="report-trend-grid-line" x1={chartLeft} y1={tick.y} x2={chartRight} y2={tick.y} />
+              <text className="report-trend-y-label" x={chartLeft - 12} y={tick.y + 4} textAnchor="end">{formatNumber(tick.value)}{metric.unit}</text>
+            </g>
+          ))}
+          <line className="report-trend-axis-line" x1={chartLeft} y1={chartBottom} x2={chartRight} y2={chartBottom} />
+          {points.length > 1 && <polygon className="report-trend-area" points={areaPoints} fill={`url(#trend-area-${metric.key})`} />}
+          {points.length > 1 ? (
+            <polyline className="report-trend-line" points={linePoints} />
+          ) : (
+            <line className="report-trend-single-line" x1={chartLeft} y1={singlePointY} x2={chartRight} y2={singlePointY} />
+          )}
+          {points.map((point) => (
+            <circle key={`${point.measuredAt}-${point.value}`} className="report-trend-point" cx={xFor(point)} cy={yFor(point.value)} r="4.5" />
+          ))}
+          {xTicks.map((tick, index) => (
+            <text key={`${tick.label}-${index}`} className="report-trend-x-label" x={tick.x} y={height - 14} textAnchor={index === 0 ? "start" : index === xTicks.length - 1 ? "end" : "middle"}>{tick.label}</text>
+          ))}
         </svg>
       </div>
       <div className="report-trend-chart-foot">

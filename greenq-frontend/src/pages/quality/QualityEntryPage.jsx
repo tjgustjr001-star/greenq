@@ -21,6 +21,20 @@ const numericLabels = {
   freshWeight: "생체중(g)",
 };
 
+const numericPlaceholders = {
+  plantHeight: "정상 예: 14~22",
+  leafWidth: "정상 예: 7~12",
+  leafLength: "정상 예: 10~18",
+  freshWeight: "정상 예: 80~140",
+};
+
+const leafColorOptions = ["진녹색", "녹색", "연녹색", "황녹색", "갈변", "기타"];
+const growthStageOptions = [
+  { value: "GERMINATION", label: "발아기" },
+  { value: "GROWING", label: "생육기" },
+  { value: "HARVEST", label: "수확기" },
+];
+
 const createSample = (index) => ({
   sampleNo: index + 1,
   plantHeight: "",
@@ -148,9 +162,9 @@ export default function QualityEntryPage() {
             <article className="sample-card enhanced" key={sample.sampleNo}>
               <div className="sample-card-head"><div><strong>샘플 {index + 1}</strong><p>개체별 원시값</p></div><button className="icon-danger-button" onClick={() => removeSample(index)} disabled={form.samples.length <= 1}><Trash2 size={15} /></button></div>
               <div className="sample-grid enhanced">
-                {numericKeys.map((key) => <label key={key}>{numericLabels[key]}<input inputMode="decimal" value={sample[key]} onChange={(e) => updateSample(index, key, e.target.value)} placeholder="숫자" /></label>)}
-                <label>엽색<input value={sample.leafColor} onChange={(e) => updateSample(index, "leafColor", e.target.value)} placeholder="예: 진녹색" /></label>
-                <label>생육단계<input value={sample.growthStage} onChange={(e) => updateSample(index, "growthStage", e.target.value)} placeholder="예: 생육기" /></label>
+                {numericKeys.map((key) => <label key={key}>{numericLabels[key]}<input inputMode="decimal" value={sample[key]} onChange={(e) => updateSample(index, key, e.target.value)} placeholder={numericPlaceholders[key]} /></label>)}
+                <label>엽색<select value={sample.leafColor} onChange={(e) => updateSample(index, "leafColor", e.target.value)}><option value="">선택</option>{leafColorOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+                <label>생육단계<select value={sample.growthStage} onChange={(e) => updateSample(index, "growthStage", e.target.value)}><option value="">선택</option>{growthStageOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                 <label className="sample-note">특이사항<textarea value={sample.specialNote} onChange={(e) => updateSample(index, "specialNote", e.target.value)} placeholder="잎 끝 갈변, 생육 지연 등" /></label>
               </div>
             </article>
