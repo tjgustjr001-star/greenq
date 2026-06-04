@@ -46,13 +46,31 @@ const createSample = (index) => ({
   specialNote: "",
 });
 
+function nullableNumber(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  if (text === "") return null;
+  const number = Number(text);
+  return Number.isFinite(number) ? number : null;
+}
+
 function average(samples, key) {
-  const values = samples.map((s) => Number(s[key])).filter((v) => !Number.isNaN(v));
+  const values = samples.map((s) => nullableNumber(s[key])).filter((value) => value !== null);
   return values.length ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)) : null;
 }
 
 function firstFilled(samples, key) {
   return samples.map((s) => String(s[key] || "").trim()).find(Boolean) || "";
+}
+
+function normalizeSample(sample) {
+  return {
+    ...sample,
+    plantHeight: nullableNumber(sample.plantHeight),
+    leafWidth: nullableNumber(sample.leafWidth),
+    leafLength: nullableNumber(sample.leafLength),
+    freshWeight: nullableNumber(sample.freshWeight),
+  };
 }
 
 export default function QualityEntryPage() {
@@ -83,7 +101,7 @@ export default function QualityEntryPage() {
 
   const selectedBatch = batches.find((batch) => String(batch.batchId) === String(form.batchId));
   const summary = useMemo(() => Object.fromEntries(numericKeys.map((key) => [key, average(form.samples, key)])), [form.samples]);
-  const filledCount = form.samples.filter((sample) => numericKeys.some((key) => String(sample[key] || "").trim() !== "")).length;
+  const filledCount = form.samples.filter((sample) => numericKeys.some((key) => nullableNumber(sample[key]) !== null)).length;
 
   const updateSample = (index, key, value) => {
     setForm((prev) => ({
@@ -120,7 +138,7 @@ export default function QualityEntryPage() {
         leafColor: firstFilled(form.samples, "leafColor"),
         growthStage: firstFilled(form.samples, "growthStage"),
         specialNote: form.samples.map((s) => s.specialNote).filter(Boolean).join(" / "),
-        samples: form.samples,
+        samples: form.samples.map(normalizeSample),
       };
       const saved = await greenqApi.createMeasurement(payload);
       navigate(`/quality/${saved.measurementId}`);
