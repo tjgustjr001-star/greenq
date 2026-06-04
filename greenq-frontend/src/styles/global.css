@@ -2800,6 +2800,10 @@ button:disabled {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.quality-status-stat-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .stat-grid.compact .stat-card {
   padding: 18px;
 }
@@ -2936,6 +2940,7 @@ button:disabled {
 
 @media (max-width: 1200px) {
   .stat-grid.five,
+  .quality-status-stat-grid,
   .quality-summary-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2949,6 +2954,7 @@ button:disabled {
 
 @media (max-width: 720px) {
   .stat-grid.five,
+  .quality-status-stat-grid,
   .quality-summary-strip,
   .quality-filter-grid,
   .quality-entry-top,

@@ -89,7 +89,7 @@ export default function QualityPage() {
         </div>
       </div>
 
-      <section className="stat-grid five compact">
+      <section className="stat-grid quality-status-stat-grid compact">
         <div className="stat-card"><p>전체</p><strong>{measurements.length}</strong><span>실측 데이터</span></div>
         {statusOrder.map((s) => <div className="stat-card" key={s}><p>{labelOf(s)}</p><strong>{counts[s] || 0}</strong><span>품질 판정</span></div>)}
       </section>
