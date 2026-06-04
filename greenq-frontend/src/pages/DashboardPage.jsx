@@ -31,12 +31,12 @@ export default function DashboardPage() {
   const latestEnvValue = latestEnv.envStatus ? labelOf(latestEnv.envStatus) : "없음";
   const latestQualityValue = latestQuality.qualityStatus ? labelOf(latestQuality.qualityStatus) : "없음";
 
-  if (loading) return <div className="panel"><p className="muted-text">DB 데이터를 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">대시보드 데이터를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Dashboard" title="대시보드" description="DB에 저장된 식물공장 운영 상태, 환경 이탈, 품질 실측 결과를 한눈에 확인합니다." actions={<><button className="secondary-button" onClick={() => navigate("/environment")}>환경 모니터링</button><button className="primary-button" onClick={() => navigate("/quality")}>실측 입력</button></>} />
-      {error && <div className="notice-box danger">대시보드 데이터를 불러오지 못했습니다. 백엔드 서버와 DB 연결 상태를 확인해 주세요. {error}</div>}
+      <PageHeader eyebrow="Dashboard" title="대시보드" description="식물공장 운영 상태, 환경 이탈, 품질 실측 결과를 한눈에 확인합니다." actions={<><button className="secondary-button" onClick={() => navigate("/environment")}>환경 모니터링</button><button className="primary-button" onClick={() => navigate("/quality")}>실측 입력</button></>} />
+      {error && <div className="notice-box danger">대시보드 데이터를 불러오지 못했습니다. 서버 연결 상태를 확인해 주세요. {error}</div>}
       <section className="stat-grid dashboard-stat-grid">
         <StatCard label="운영 중 배치" value={data?.growingBatchCount ?? 0}  />
         <StatCard label="미확인 환경 알림" value={unreadAlerts} tone={unreadAlerts > 0 ? "red" : "green"} />

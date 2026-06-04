@@ -69,12 +69,12 @@ export default function IssueDetailPage() {
   };
 
   const deleteIssue = async () => {
-    if (!window.confirm("부적합 이력을 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("부적합 이력을 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteIssue(type, issueId);
     navigate("/issues");
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">부적합 상세를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">부적합 상세를 불러오는 중입니다...</p></div>;
   if (error || !issue) return <EmptyState title="부적합 이력을 찾을 수 없습니다." description={error || "잘못된 부적합 ID입니다."} action={<button className="primary-button" onClick={() => navigate("/issues")}>부적합 목록으로</button>} />;
 
   const activeAlertCount = alerts.filter((alert) => String(alert.alertStatus).toUpperCase() !== "CLOSED").length;
@@ -86,7 +86,7 @@ export default function IssueDetailPage() {
       <PageHeader
         eyebrow="Nonconformity Detail"
         title={`${issue.zoneName} · ${issue.itemName}`}
-        description="DB에 저장된 부적합 상세와 조치/검토 이력을 확인합니다."
+        description="부적합 상세와 조치/검토 이력을 확인합니다."
         actions={<><button className="secondary-button" onClick={() => navigate("/issues")}>목록으로</button>{type === "env" && <button className="primary-button" onClick={() => setActionModalOpen(true)}><Plus size={16} />조치 메모</button>}{type === "quality" && <button className="primary-button" onClick={() => setReviewModalOpen(true)}><Plus size={16} />검토 메모</button>}{isAdmin && <button className="danger-button" onClick={deleteIssue}>삭제</button>}</>}
       />
 
@@ -129,7 +129,7 @@ export default function IssueDetailPage() {
         title="환경 조치 메모 등록"
         description="환경 부적합 확인, 조치중, 조치완료 상태를 메모와 함께 남깁니다."
         onClose={resetActionForm}
-        footer={<><button className="secondary-button" onClick={resetActionForm}>취소</button><button className="primary-button" onClick={saveAction}>DB 저장</button></>}
+        footer={<><button className="secondary-button" onClick={resetActionForm}>취소</button><button className="primary-button" onClick={saveAction}>저장</button></>}
       >
         <div className="form-grid modal-form-grid single">
           <label className="wide-field">조치 내용<textarea value={actionContent} onChange={(e) => setActionContent(e.target.value)} placeholder="확인 내용 또는 조치 내용을 입력" /></label>
@@ -142,7 +142,7 @@ export default function IssueDetailPage() {
         title="품질 검토 메모 등록"
         description="품질 부적합은 설비 조치보다 검토/분석/리포트 반영 흐름으로 관리합니다."
         onClose={resetReviewForm}
-        footer={<><button className="secondary-button" onClick={resetReviewForm}>취소</button><button className="primary-button" onClick={saveReview}>DB 저장</button></>}
+        footer={<><button className="secondary-button" onClick={resetReviewForm}>취소</button><button className="primary-button" onClick={saveReview}>저장</button></>}
       >
         <div className="form-grid modal-form-grid single">
           <label className="wide-field">검토 내용<textarea value={reviewContent} onChange={(e) => setReviewContent(e.target.value)} placeholder="원인 분석, 품질 판단, 개선 의견을 입력" /></label>

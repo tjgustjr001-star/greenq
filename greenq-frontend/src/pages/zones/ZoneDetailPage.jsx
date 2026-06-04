@@ -46,9 +46,9 @@ export default function ZoneDetailPage() {
     await reload();
   };
   const updateZoneStatus = async (nextStatus) => { await greenqApi.updateZone(zoneId, { ...zone, zoneStatus: nextStatus }); await reload(); };
-  const deleteBatch = async (batch) => { if (!window.confirm("배치를 DB에서 임시 삭제 처리합니다.")) return; await greenqApi.deleteBatch(batch.batchId); await reload(); };
+  const deleteBatch = async (batch) => { if (!window.confirm("배치를 임시 삭제 처리합니다.")) return; await greenqApi.deleteBatch(batch.batchId); await reload(); };
 
-  if (loading) return <div className="panel"><p className="muted-text">구역 상세를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">구역 상세를 불러오는 중입니다...</p></div>;
   if (error || !zone) return <EmptyState title="구역을 찾을 수 없습니다." description={error || "잘못된 구역 ID입니다."} action={<button className="primary-button" onClick={() => navigate("/zones")}>구역 목록으로</button>} />;
 
   return (
@@ -56,7 +56,7 @@ export default function ZoneDetailPage() {
       <PageHeader
         eyebrow="Zone Detail"
         title={`${zone.zoneName} 상세`}
-        description="DB 기준으로 구역 기본 정보, 상태 변경, 해당 구역의 작물 배치 이력을 확인합니다."
+        description="구역 기본 정보, 상태 변경, 해당 구역의 작물 배치 이력을 확인합니다."
         actions={<><button className="secondary-button" onClick={() => navigate("/zones")}>목록으로</button>{isAdmin && <button className="primary-button" onClick={openBatchDrawer}><Plus size={16} />새 배치 등록</button>}</>}
       />
       <div className="panel detail-hero"><div><p className="eyebrow">Zone Information</p><h3>{zone.zoneName}</h3><p>{zone.locationDesc} · {zone.areaSize}㎡</p></div><StatusSelect value={zone.zoneStatus || "ACTIVE"} options={zoneStatusOptions} onChange={updateZoneStatus} disabled={!isAdmin} label="구역 상태 변경" /></div>

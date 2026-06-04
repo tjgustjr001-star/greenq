@@ -179,7 +179,7 @@ export default function ReportListPage() {
     }
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">리포트를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">리포트를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
@@ -200,26 +200,37 @@ export default function ReportListPage() {
         <div className="report-summary-card"><span>최근 발급</span><strong>{reports[0]?.createdAt || "-"}</strong></div>
       </div>
 
-      <div className="panel">
+      <div className="panel table-panel">
         <div className="panel-head">
           <h3>리포트 목록</h3>
           <p>리포트 원본은 수정하지 않고, 같은 조건으로 다시 발급하면 버전이 증가합니다.</p>
         </div>
-        <table>
+        <table className="data-table report-list-table">
+          <colgroup>
+            <col className="col-title" />
+            <col className="col-status" />
+            <col className="col-scope" />
+            <col className="col-target" />
+            <col className="col-period" />
+            <col className="col-small" />
+            <col className="col-status" />
+            <col className="col-date" />
+            <col className="col-action" />
+          </colgroup>
           <thead>
             <tr><th>리포트명</th><th>유형</th><th>범위</th><th>대상</th><th>기간</th><th>버전</th><th>상태</th><th>발급일</th><th>관리</th></tr>
           </thead>
           <tbody>
             {reports.map((report) => (
               <tr key={report.reportId}>
-                <td><button className="link-cell" onClick={() => navigate(`/reports/${report.reportId}`)}><strong>{report.reportTitle}</strong></button></td>
+                <td className="text-left"><button className="link-cell" onClick={() => navigate(`/reports/${report.reportId}`)}><strong>{report.reportTitle}</strong></button></td>
                 <td><StatusBadge value={report.reportType} /></td>
-                <td>{labelOf(report.reportScope)}</td>
-                <td>{report.targetName}</td>
-                <td>{report.startDate} ~ {report.endDate}</td>
+                <td><span className="table-pill">{labelOf(report.reportScope)}</span></td>
+                <td className="text-left"><span className="table-text-wrap">{report.targetName}</span></td>
+                <td><span className="table-nowrap">{report.startDate} ~ {report.endDate}</span></td>
                 <td>v{report.reportVersion || 1}</td>
                 <td><StatusBadge value={report.reportStatus} /></td>
-                <td>{report.createdAt}</td>
+                <td><span className="table-nowrap">{report.createdAt}</span></td>
                 <td><ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/reports/${report.reportId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => setDeleteTarget(report) }]} /></td>
               </tr>
             ))}

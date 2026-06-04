@@ -53,11 +53,11 @@ export default function ZoneListPage() {
     }
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">구역 데이터를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">구역 데이터를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Zone & Batch" title="구역/배치 관리" description="DB에 저장된 재배 구역과 현재 배치 상태를 조회합니다." actions={isAdmin ? <button className="primary-button" onClick={startCreate}><Plus size={16} />구역 등록</button> : null} />
+      <PageHeader eyebrow="Zone & Batch" title="구역/배치 관리" description="재배 구역과 현재 배치 상태를 조회합니다." actions={isAdmin ? <button className="primary-button" onClick={startCreate}><Plus size={16} />구역 등록</button> : null} />
       {!isAdmin && <div className="notice-box">작업자는 구역 상태를 조회할 수 있습니다.</div>}
       {error && <div className="notice-box">{error}</div>}
       {actionError && <div className="notice-box danger">{actionError}</div>}

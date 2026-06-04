@@ -106,14 +106,14 @@ export default function CropListPage() {
     }
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">작물 데이터를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">작물 데이터를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page">
       <PageHeader
         eyebrow="Crop & Standard"
         title="작물/기준 관리"
-        description="DB에 저장된 작물 목록을 확인하고 작물별 기준 관리로 이동합니다."
+        description="작물 목록을 확인하고 작물별 기준 관리로 이동합니다."
         actions={isAdmin ? <button className="primary-button" onClick={startCreate}><Plus size={16} />작물 등록</button> : null}
       />
       {!isAdmin && <div className="notice-box">작업자는 작물과 기준값을 조회할 수 있습니다.</div>}

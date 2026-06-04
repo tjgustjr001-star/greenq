@@ -40,7 +40,7 @@ export default function DeletedDataPage() {
   };
 
   if (loading) {
-    return <div className="panel"><p className="muted-text">삭제 데이터를 DB에서 불러오는 중입니다...</p></div>;
+    return <div className="panel"><p className="muted-text">삭제 데이터를 불러오는 중입니다...</p></div>;
   }
 
   return (
@@ -48,7 +48,7 @@ export default function DeletedDataPage() {
       <PageHeader
         eyebrow="Deleted Data"
         title="삭제 데이터 관리"
-        description="localStorage 휴지통이 아니라 DB의 delete_yn='Y' 데이터를 조회합니다."
+        description="임시 삭제된 데이터를 조회하고 복구 또는 영구 삭제할 수 있습니다."
       />
 
       {!isAdmin && <div className="notice-box">삭제 데이터 관리는 관리자 전용 기능입니다.</div>}
@@ -56,7 +56,7 @@ export default function DeletedDataPage() {
       {actionError && <div className="notice-box danger">{actionError}</div>}
 
       {!isAdmin ? null : rows.length === 0 ? (
-        <EmptyState title="삭제 데이터가 없습니다." description="현재 DB에 임시 삭제된 데이터가 없습니다." />
+        <EmptyState title="삭제 데이터가 없습니다." description="현재 임시 삭제된 데이터가 없습니다." />
       ) : (
         <div className="panel">
           <table>

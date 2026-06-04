@@ -22,10 +22,10 @@ const numericLabels = {
 };
 
 const numericPlaceholders = {
-  plantHeight: "정상 예: 14~22",
-  leafWidth: "정상 예: 7~12",
-  leafLength: "정상 예: 10~18",
-  freshWeight: "정상 예: 80~140",
+  plantHeight: "14~22",
+  leafWidth: "7~12",
+  leafLength: "10~18",
+  freshWeight: "80~140",
 };
 
 const leafColorOptions = ["진녹색", "녹색", "연녹색", "황녹색", "갈변", "기타"];
@@ -129,7 +129,7 @@ export default function QualityEntryPage() {
     }
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">배치 정보를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">배치 정보를 불러오는 중입니다...</p></div>;
 
   return (
     <div className="page quality-entry-page">
@@ -156,7 +156,7 @@ export default function QualityEntryPage() {
           {numericKeys.map((key) => <div key={key}><span>{numericLabels[key]}</span><strong>{summary[key] ?? "-"}</strong></div>)}
         </div>
 
-        <div className="panel-head no-border"><div><h3>샘플 카드 입력</h3><p className="panel-desc">PC에서는 카드 단위로 빠르게 입력하고, 태블릿에서도 표보다 덜 답답하게 입력할 수 있도록 구성했습니다.</p></div><button className="secondary-button" onClick={addSample}><Plus size={15} />샘플 추가</button></div>
+        <div className="panel-head no-border"><div><h3>샘플별 실측값</h3><p className="panel-desc">샘플별 측정값을 입력하면 평균값과 품질 판정에 반영됩니다.</p></div><button className="secondary-button" onClick={addSample}><Plus size={15} />샘플 추가</button></div>
         <div className="sample-card-list enhanced">
           {form.samples.map((sample, index) => (
             <article className="sample-card enhanced" key={sample.sampleNo}>

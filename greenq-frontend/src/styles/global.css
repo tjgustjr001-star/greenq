@@ -2992,14 +2992,27 @@ button:disabled {
 .sample-grid.enhanced label {
   display: grid;
   gap: 8px;
+  grid-template-rows: auto auto;
+  align-content: start;
   color: #35443a;
   font-weight: 800;
   font-size: 13px;
   text-align: left;
 }
 
+.sample-grid.enhanced input,
+.sample-grid.enhanced select {
+  height: 54px;
+  min-height: 54px;
+}
+
 .sample-grid.enhanced .sample-note {
   grid-column: span 2;
+}
+
+.sample-grid.enhanced .sample-note textarea {
+  min-height: 118px;
+  height: 118px;
 }
 
 .empty-table-cell {
@@ -3738,6 +3751,29 @@ button:disabled {
   line-height: 1.55;
 }
 
+.data-table .table-nowrap {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.data-table .table-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 30px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(69, 132, 86, 0.1);
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
 .data-table .status-badge {
   white-space: nowrap;
 }
@@ -3754,6 +3790,9 @@ button:disabled {
 .data-table col.col-content { width: 34%; }
 .data-table col.col-note { width: 24%; }
 .data-table col.col-guide { width: 30%; }
+.data-table col.col-scope { width: 9%; }
+.data-table col.col-target { width: 16%; }
+.data-table col.col-period { width: 18%; }
 
 .issue-alert-table col.col-content { width: 34%; }
 .issue-alert-table col.col-title { width: 26%; }
@@ -3808,6 +3847,22 @@ button:disabled {
 .review-table col.col-content,
 .issue-review-table col.col-content { width: 42%; }
 .sample-table col.col-content { width: 24%; }
+.report-list-table col.col-title { width: 25%; }
+.report-list-table col.col-date { width: 17%; }
+.report-list-table col.col-status { width: 10%; }
+.report-list-table col.col-small { width: 7%; }
+.report-list-table col.col-action { width: 7%; }
+.report-list-table .link-cell {
+  max-width: 100%;
+  text-align: left;
+}
+.report-list-table .link-cell strong {
+  display: block;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
 
 @media (max-width: 1100px) {
   .data-table {
@@ -3820,6 +3875,10 @@ button:disabled {
 
   .table-panel .data-table {
     min-width: 820px;
+  }
+
+  .table-panel .report-list-table {
+    min-width: 1080px;
   }
 
   .quality-summary-panel dl {

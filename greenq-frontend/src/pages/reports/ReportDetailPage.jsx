@@ -325,12 +325,12 @@ export default function ReportDetailPage() {
   const { data: report, loading, error } = useApiData(() => greenqApi.report(reportId), [reportId]);
   const condition = useMemo(() => parseCondition(report?.generatedConditionJson), [report]);
   const deleteReport = async () => {
-    if (!window.confirm("리포트를 DB에서 임시 삭제 처리합니다.")) return;
+    if (!window.confirm("리포트를 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteReport(reportId);
     navigate("/reports");
   };
 
-  if (loading) return <div className="panel"><p className="muted-text">리포트를 DB에서 불러오는 중입니다...</p></div>;
+  if (loading) return <div className="panel"><p className="muted-text">리포트를 불러오는 중입니다...</p></div>;
   if (error || !report) return <EmptyState title="리포트를 찾을 수 없습니다." description={error || "잘못된 리포트 ID입니다."} action={<button className="primary-button" onClick={() => navigate("/reports")}>리포트 목록으로</button>} />;
 
   return (
