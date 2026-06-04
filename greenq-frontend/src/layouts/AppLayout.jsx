@@ -1,5 +1,5 @@
 import { Activity, AlertTriangle, BarChart3, Bell, ClipboardCheck, Home, Layers3, Leaf, LogOut, Map, Trash2, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { greenqApi } from "../api/greenqApi.js";
 import { alertStatusLabel, issueStatusLabel, labelOf } from "../data/displayLabels.js";
@@ -26,6 +26,12 @@ function currentUserId(user) {
   return user?.userId || user?.id || null;
 }
 
+function alertIssuePath(alert) {
+  const rawId = alert.rawId || alert.envNcId || String(alert.issueId || "").replace(/^(ENV|QLT)-/i, "");
+  if (!rawId) return "/issues?type=env";
+  return `/issues/${normalizeIssueType(alert.issueType)}/${rawId}`;
+}
+
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,6 +42,7 @@ export default function AppLayout() {
   const showRoleChip = userName !== roleLabel;
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
+  const notificationRef = useRef(null);
 
   const refreshAlerts = useCallback(() => {
     return greenqApi.envAlerts({ status: "UNREAD" })
@@ -56,6 +63,27 @@ export default function AppLayout() {
     };
   }, [refreshAlerts]);
 
+  useEffect(() => {
+    if (!notificationOpen) return;
+
+    const handlePointerDown = (event) => {
+      if (notificationRef.current?.contains(event.target)) return;
+      setNotificationOpen(false);
+    };
+
+    const handleEsc = (event) => {
+      if (event.key === "Escape") setNotificationOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEsc);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [notificationOpen]);
+
   const handleLogout = () => {
     clearCurrentUser();
     setNotificationOpen(false);
@@ -69,8 +97,7 @@ export default function AppLayout() {
       }
     } finally {
       setNotificationOpen(false);
-      const rawId = alert.rawId || alert.envNcId || String(alert.issueId).replace(/^(ENV|QLT)-/i, "");
-      navigate(`/issues/${normalizeIssueType(alert.issueType)}/${rawId}`);
+      navigate(alertIssuePath(alert));
       await refreshAlerts();
       window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
     }
@@ -108,20 +135,22 @@ export default function AppLayout() {
       <section className="main-area">
         <header className="topbar">
           <div><p className="eyebrow">현재 로그인</p><strong>{userName}</strong>{showRoleChip && <span className={`role-chip ${role === "ADMIN" ? "admin" : "worker"}`}>{roleLabel}</span>}</div>
-          <div className="topbar-actions">
+          <div className="topbar-actions" ref={notificationRef}>
             <button type="button" className={`notification-button ${notificationOpen ? "active" : ""}`} onClick={() => setNotificationOpen((prev) => !prev)} title="환경 알림">
               <Bell size={18} /><span>알림</span>{alerts.length > 0 && <em>{alerts.length}</em>}
             </button>
             {notificationOpen && (
               <div className="notification-preview open">
-                <div className="notification-preview-head"><strong>환경 알림</strong><button type="button" onClick={() => navigate("/issues?type=env")}>전체 보기</button></div>
+                <div className="notification-preview-head"><strong>환경 알림</strong><button type="button" onClick={() => { setNotificationOpen(false); navigate("/issues?type=env"); }}>전체 보기</button></div>
                 {alerts.length === 0 ? <p className="notification-empty">확인할 환경 부적합 알림이 없습니다.</p> : alerts.slice(0, 4).map((alert) => (
-                  <button key={`alert-${alert.alertId}`} type="button" className="notification-preview-item" onClick={() => openAlert(alert)}>
-                    <span>{alert.zoneName} · {alert.itemName}</span>
-                    <small>{labelOf(alert.alertLevel || alert.severity)} / {issueStatusLabel("env", alert.status)} / {alertStatusLabel(alert.alertStatus)}</small>
-                    <small>{alert.alertMessage}</small>
-                    <em role="button" tabIndex={-1} onClick={(event) => hideAlert(event, alert)}>알림 제외</em>
-                  </button>
+                  <div key={`alert-${alert.alertId}`} className="notification-preview-item">
+                    <button type="button" className="notification-preview-main" onClick={() => openAlert(alert)}>
+                      <span>{alert.zoneName} · {alert.itemName}</span>
+                      <small>{labelOf(alert.alertLevel || alert.severity)} / {issueStatusLabel("env", alert.status)} / {alertStatusLabel(alert.alertStatus)}</small>
+                      <small>{alert.alertMessage}</small>
+                    </button>
+                    <button type="button" className="notification-dismiss-button" onClick={(event) => hideAlert(event, alert)}>알림 제외</button>
+                  </div>
                 ))}
               </div>
             )}

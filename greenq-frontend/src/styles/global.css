@@ -781,6 +781,7 @@ input:focus, select:focus, textarea:focus {
   .content-grid.two,
   .stat-grid,
   .stat-grid.three,
+  .dashboard-priority-grid,
   .quick-actions {
     grid-template-columns: 1fr;
   }
@@ -914,6 +915,10 @@ input:focus, select:focus, textarea:focus {
   text-align: left;
   display: grid;
   gap: 4px;
+}
+
+.notification-preview-main {
+  width: 100%;
 }
 
 .notification-preview span {
@@ -1058,6 +1063,55 @@ button.secondary-button + button.primary-button {
   justify-items: center;
   align-content: center;
   min-height: 142px;
+}
+
+.dashboard-priority-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-priority-card {
+  border: 1px solid rgba(223, 231, 225, 0.9);
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+}
+
+.dashboard-priority-card:hover {
+  border-color: #b9dac4;
+  transform: translateY(-1px);
+}
+
+.dashboard-priority-card span {
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.dashboard-priority-card strong {
+  font-size: 18px;
+}
+
+.dashboard-priority-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.dashboard-priority-card.danger {
+  border-color: #f0d6d1;
+  background: #fffaf8;
+}
+
+.dashboard-priority-card.danger span {
+  color: #b33324;
 }
 
 .inline-actions {
@@ -2117,11 +2171,27 @@ button:disabled {
 
 .notification-preview-item {
   position: relative;
+  border: 1px solid var(--line);
+  background: #fbfdfb;
+  border-radius: 14px;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
 }
 
-.notification-preview-item em {
+.notification-preview-item .notification-preview-main {
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  padding: 2px;
+}
+
+.notification-dismiss-button {
   justify-self: start;
-  font-style: normal;
+  border: 0 !important;
+  background: transparent !important;
+  min-height: auto !important;
+  padding: 0 !important;
   font-size: 12px;
   font-weight: 900;
   color: #b33324;
