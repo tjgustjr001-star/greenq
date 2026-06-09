@@ -4096,25 +4096,62 @@ button:disabled {
 
 .data-table col.col-zone { width: 10%; }
 .data-table col.col-batch { width: 18%; }
-.issue-list-table col.col-date { width: 15%; }
-.issue-list-table col.col-standard { width: 16%; }
-.issue-list-table col.col-batch { width: 18%; }
-.issue-list-table col.col-issue-state { min-width: 120px; }
-.issue-list-table col.col-action { width: 6%; }
-.issue-list-table col.col-alert { width: 6%; }
 
 .issue-list-panel {
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .issue-list-table {
   table-layout: fixed;
-  min-width: 1120px;
+  width: 100%;
+  min-width: 0;
 }
 
 .issue-list-table td,
 .issue-list-table th {
   min-width: 0;
+  padding-left: 10px;
+  padding-right: 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.issue-list-table th {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.issue-list-table col.col-date { width: 112px; }
+.issue-list-table col.col-type { width: 72px; }
+.issue-list-table col.col-zone { width: 80px; }
+.issue-list-table col.col-batch { width: auto; }
+.issue-list-table col.col-item { width: 76px; }
+.issue-list-table col.col-measure { width: 120px; }
+.issue-list-table col.col-severity { width: 84px; }
+.issue-list-table col.col-issue-state { width: 108px; }
+.issue-list-table col.col-alert { width: 86px; }
+.issue-list-table col.col-action { width: 56px; }
+
+.issue-list-table td:nth-child(9),
+.issue-list-table th:nth-child(9),
+.issue-list-table td:nth-child(10),
+.issue-list-table th:nth-child(10) {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.issue-date-cell {
+  display: inline-block;
+  white-space: pre-line;
+  line-height: 1.35;
+  font-size: 13px;
+}
+
+.issue-batch-link {
+  max-width: 100%;
+  text-align: left;
 }
 
 .issue-list-table .link-cell {
@@ -4125,6 +4162,28 @@ button:disabled {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+
+.issue-measure-cell {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  line-height: 1.25;
+}
+
+.issue-measure-cell strong {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.issue-measure-cell span {
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -4182,7 +4241,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   min-width: 58px;
-  height: 28px;
+  height: 30px;
   border-radius: 999px;
   padding: 0 10px;
   font-size: 12px;
@@ -4193,17 +4252,47 @@ button:disabled {
 .issue-alert-chip.unread {
   background: #fff1e8;
   color: #a34a18;
+  border: 1px solid #f5c6a8;
 }
 
 .issue-alert-chip.read {
   background: #e8f5ed;
   color: #276749;
+  border: 1px solid #a7d7b8;
 }
 
 .issue-alert-chip.closed,
 .issue-alert-muted {
   background: #f4f7f5;
   color: #68756e;
+  border: 1px solid #dce7df;
+}
+
+.issue-list-table td:last-child,
+.issue-list-table th:last-child {
+  padding-left: 4px;
+  padding-right: 4px;
+  text-align: center;
+}
+
+.issue-list-table .action-menu {
+  justify-content: center;
+}
+
+.issue-list-table .action-menu-trigger {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+}
+
+@media (max-width: 900px) {
+  .issue-list-panel {
+    overflow-x: auto;
+  }
+
+  .issue-list-table {
+    min-width: 980px;
+  }
 }
 
 @media (max-width: 1200px) {
