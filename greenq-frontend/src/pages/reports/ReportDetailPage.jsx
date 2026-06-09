@@ -7,6 +7,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { issueStatusLabel, labelOf } from "../../data/displayLabels.js";
 import { useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { formatNumber, formatNumberText } from "../../utils/numberFormat.js";
 
 const STATUS_ORDER = ["NORMAL", "CAUTION", "FAIL", "MISSING", "SKIPPED"];
 const STATUS_LABELS = {
@@ -40,13 +41,6 @@ function asList(value) {
 function toNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
-}
-
-function formatNumber(value, digit = 1) {
-  const number = toNumber(value);
-  if (number === null) return "-";
-  if (Number.isInteger(number)) return String(number);
-  return number.toFixed(digit).replace(/\.0$/, "");
 }
 
 function SummaryPanel({ title, children }) {
@@ -359,8 +353,8 @@ function ReportTargetQualityPanel({ items }) {
               <tr key={item.qualityNcId || index}>
                 <td>{item.occurredAt || "-"}</td>
                 <td className="text-left"><strong>{item.itemName || item.itemCode || "-"}</strong></td>
-                <td>{item.measuredValue ?? "-"}</td>
-                <td className="text-left"><span className="table-text-wrap">{item.standardRange || "-"}</span></td>
+                <td>{formatNumber(item.measuredValue)}</td>
+                <td className="text-left"><span className="table-text-wrap">{formatNumberText(item.standardRange)}</span></td>
                 <td><StatusBadge value={item.severity} /></td>
                 <td>{issueStatusLabel("quality", item.qualityNcStatus)}</td>
                 <td className="text-left"><span className="table-text-wrap">{item.recommendedNextAction || "-"}</span></td>
@@ -444,10 +438,10 @@ export default function ReportDetailPage() {
           <div><span>범위</span><strong>{labelOf(condition?.reportScope || report.reportScope)}</strong></div>
           <div><span>대상</span><strong>{condition?.targetName || report.targetName}</strong></div>
           <div><span>기간</span><strong>{report.startDate} ~ {report.endDate}</strong></div>
-          <div><span>평균 온도</span><strong>{condition?.envAvgTemp || "-"}℃</strong></div>
-          <div><span>평균 습도</span><strong>{condition?.envAvgHumidity || "-"}%</strong></div>
-          <div><span>평균 pH</span><strong>{condition?.envAvgPh || "-"}</strong></div>
-          <div><span>평균 EC</span><strong>{condition?.envAvgEc || "-"}</strong></div>
+          <div><span>평균 온도</span><strong>{formatNumber(condition?.envAvgTemp)}℃</strong></div>
+          <div><span>평균 습도</span><strong>{formatNumber(condition?.envAvgHumidity)}%</strong></div>
+          <div><span>평균 pH</span><strong>{formatNumber(condition?.envAvgPh)}</strong></div>
+          <div><span>평균 EC</span><strong>{formatNumber(condition?.envAvgEc)}</strong></div>
         </div>
       </div>
     </div>

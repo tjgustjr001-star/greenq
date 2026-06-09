@@ -7,6 +7,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { issueStatusLabel, issueStatusShortLabel } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { formatNumber, formatNumberText } from "../../utils/numberFormat.js";
 
 function normalizeIssueType(value) {
   return String(value || "").toLowerCase() === "quality" ? "quality" : "env";
@@ -194,11 +195,11 @@ export default function IssueListPage() {
                   <strong>{issue.itemName}</strong>
                 </td>
 
-                <td>{issue.measuredValue}</td>
+                <td>{formatNumber(issue.measuredValue)}</td>
 
                 <td>
                   <span className="table-text-wrap">
-                    {issue.standardRange}
+                    {formatNumberText(issue.standardRange)}
                   </span>
                 </td>
 

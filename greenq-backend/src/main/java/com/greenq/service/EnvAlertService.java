@@ -157,6 +157,11 @@ public class EnvAlertService {
                 + ", 심각도: " + normalizeLevel(nc.getSeverity()) + ".";
     }
 
+    private String plainNumber(BigDecimal value) {
+        if (value == null) return "-";
+        return value.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+    }
+
     private String normalizeLevel(String severity) {
         return "FAIL".equalsIgnoreCase(String.valueOf(severity)) ? "FAIL" : "CAUTION";
     }

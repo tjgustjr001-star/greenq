@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { greenqApi } from "../api/greenqApi.js";
 import { alertStatusLabel, issueStatusLabel, labelOf } from "../data/displayLabels.js";
 import { clearCurrentUser, defaultPathForRole, getCurrentUser } from "../utils/auth.js";
+import { formatNumberText } from "../utils/numberFormat.js";
 
 const menus = [
   { label: "대시보드", path: "/dashboard", match: "/dashboard", icon: Home, roles: ["ADMIN"] },
@@ -148,7 +149,7 @@ export default function AppLayout() {
                     <button type="button" className="notification-preview-main" onClick={() => openAlert(alert)}>
                       <span>{alert.zoneName} · {alert.itemName}</span>
                       <small>{labelOf(alert.alertLevel || alert.severity)} / {issueStatusLabel("env", alert.status)} / {alertStatusLabel(alert.alertStatus)}</small>
-                      <small>{alert.alertMessage}</small>
+                      <small>{formatNumberText(alert.alertMessage)}</small>
                     </button>
                     <button type="button" className="notification-dismiss-button" onClick={(event) => hideAlert(event, alert)}>알림 제외</button>
                   </div>

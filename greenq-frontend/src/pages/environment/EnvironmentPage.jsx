@@ -10,6 +10,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
 import { batchNameWithZone } from "../../utils/batchLabel.js";
+import { formatNumber } from "../../utils/numberFormat.js";
 
 const GRAPH_RANGE_OPTIONS = [
   { value: "6", label: "최근 6시간", help: "실시간 이상 여부 확인" },
@@ -26,7 +27,7 @@ function findRangeOption(value) {
 
 function formatChartValue(value) {
   if (!Number.isFinite(value)) return "-";
-  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+  return formatNumber(value);
 }
 
 function metricValue(row, metric) {
@@ -218,7 +219,7 @@ function statusCount(rows, status) {
 
 function formatValue(value, suffix = "") {
   if (value === null || value === undefined || value === "") return "-";
-  return `${value}${suffix}`;
+  return `${formatNumber(value)}${suffix}`;
 }
 
 export default function EnvironmentPage() {

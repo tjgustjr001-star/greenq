@@ -8,6 +8,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { labelOf } from "../../data/displayLabels.js";
 import { useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { formatNumber, formatNumberText } from "../../utils/numberFormat.js";
 
 function statusOf(item) {
   return item.status || item.evalStatus || "-";
@@ -15,13 +16,6 @@ function statusOf(item) {
 
 function statusCount(items, status) {
   return items.filter((item) => statusOf(item) === status).length;
-}
-
-function formatNumber(value) {
-  if (value === null || value === undefined || value === "") return "-";
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return String(value);
-  return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2).replace(/\.00$/, "").replace(/0$/, "");
 }
 
 function formatValue(value, unit = "") {
@@ -39,7 +33,7 @@ function formatMeasuredValue(item) {
 function formatStandard(item) {
   const standard = item.standard || item.standardRange;
   if (!standard || standard === "-") return "-";
-  return `${standard}${item.unit || ""}`;
+  return `${formatNumberText(standard)}${item.unit || ""}`;
 }
 
 function formatDeviation(value) {

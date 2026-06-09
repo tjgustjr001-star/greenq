@@ -9,6 +9,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { alertStatusLabel, issueStatusLabel } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { formatNumber, formatNumberText } from "../../utils/numberFormat.js";
 
 function normalizeType(value) {
   return String(value || "").toLowerCase() === "quality" ? "quality" : "env";
@@ -142,7 +143,7 @@ export default function IssueDetailPage() {
         <div>
           <p className="eyebrow">{type === "env" ? "환경 부적합" : "품질 부적합"}</p>
           <h3>{issue.batchName}</h3>
-          <p>{issue.occurredAt} · 기준 {issue.standardRange}</p>
+          <p>{issue.occurredAt} · 기준 {formatNumberText(issue.standardRange)}</p>
         </div>
         <div className="badge-stack">
           <div className="inline-actions">
@@ -161,10 +162,10 @@ export default function IssueDetailPage() {
         <div className="panel info-panel">
           <h3>부적합 정보</h3>
           <dl>
-            <dt>측정값</dt><dd>{issue.measuredValueDisplay ?? issue.measuredTextValue ?? issue.measuredValue ?? "-"}</dd>
-            <dt>기준 최소</dt><dd>{issue.standardMin ?? "-"}</dd>
-            <dt>기준 최대</dt><dd>{issue.standardMax ?? "-"}</dd>
-            <dt>이탈률</dt><dd>{issue.deviationRate ?? "-"}</dd>
+            <dt>측정값</dt><dd>{issue.measuredValueDisplay ?? issue.measuredTextValue ?? formatNumber(issue.measuredValue)}</dd>
+            <dt>기준 최소</dt><dd>{formatNumber(issue.standardMin)}</dd>
+            <dt>기준 최대</dt><dd>{formatNumber(issue.standardMax)}</dd>
+            <dt>이탈률</dt><dd>{issue.deviationRate == null ? "-" : `${formatNumber(issue.deviationRate)}%`}</dd>
             {type === "quality" && (
               <>
                 <dt>실측 ID</dt>
@@ -213,7 +214,7 @@ export default function IssueDetailPage() {
                   <td className="text-left"><span className="table-text-wrap">{alert.alertTitle}</span></td>
                   <td><StatusBadge value={alert.alertLevel} /></td>
                   <td><span className={`status-badge ${String(alert.alertStatus || "").toLowerCase()}`}>{alertStatusLabel(alert.alertStatus)}</span></td>
-                  <td className="text-left"><span className="table-text-wrap">{alert.alertMessage}</span></td>
+                  <td className="text-left"><span className="table-text-wrap">{formatNumberText(alert.alertMessage)}</span></td>
                 </tr>
               ))}</tbody>
             </table>

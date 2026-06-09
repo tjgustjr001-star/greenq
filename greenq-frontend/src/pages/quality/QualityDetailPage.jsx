@@ -6,10 +6,11 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { issueStatusLabel, labelOf } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
+import { formatNumber, formatNumberText } from "../../utils/numberFormat.js";
 
 function fmtValue(value, unit = "") {
   if (value === null || value === undefined || value === "") return "-";
-  return `${value}${unit || ""}`;
+  return `${formatNumber(value)}${unit || ""}`;
 }
 
 function isReportTarget(row) {
@@ -114,8 +115,8 @@ export default function QualityDetailPage() {
             <tr key={item.qualityEvalItemId || item.itemCode}>
               <td className="text-left"><strong>{item.itemName}</strong></td>
               <td>{fmtValue(item.measuredValue ?? item.measuredTextValue, item.unit)}</td>
-              <td className="text-left"><span className="table-text-wrap">{item.expectedTextValue ? `기대값: ${item.expectedTextValue}` : item.standard}</span></td>
-              <td>{item.deviationValue ?? "-"}</td>
+              <td className="text-left"><span className="table-text-wrap">{formatNumberText(item.expectedTextValue ? `기대값: ${item.expectedTextValue}` : item.standard)}</span></td>
+              <td>{formatNumber(item.deviationValue)}</td>
               <td>{item.deviationRate === null || item.deviationRate === undefined ? "-" : `${item.deviationRate}%`}</td>
               <td><StatusBadge value={item.status || item.evalStatus} /></td>
             </tr>
@@ -132,8 +133,8 @@ export default function QualityDetailPage() {
             <tbody>{qualityIssues.map((issue) => (
               <tr key={issue.qualityNcId}>
                 <td className="text-left"><strong>{issue.itemName}</strong></td>
-                <td>{issue.measuredValueDisplay ?? issue.measuredTextValue ?? issue.measuredValue ?? "-"}</td>
-                <td className="text-left"><span className="table-text-wrap">{issue.standardRange}</span></td>
+                <td>{issue.measuredValueDisplay ?? issue.measuredTextValue ?? formatNumber(issue.measuredValue)}</td>
+                <td className="text-left"><span className="table-text-wrap">{formatNumberText(issue.standardRange)}</span></td>
                 <td><StatusBadge value={issue.severity} /></td>
                 <td>{issueStatusLabel("quality", issue.status || issue.qualityNcStatus)}</td>
                 <td>{isReportTarget(issue) ? "대상" : "대상 아님"}</td>

@@ -7,6 +7,7 @@ import { alertStatusLabel, issueStatusLabel, labelOf } from "../data/displayLabe
 import { asArray, useApiData } from "../hooks/useApiData.js";
 import { getCurrentUser } from "../utils/auth.js";
 import { batchNameWithZone } from "../utils/batchLabel.js";
+import { formatNumber, formatNumberText } from "../utils/numberFormat.js";
 
 function issueTarget(issue) {
   const rawId = issue.rawId || String(issue.issueId || "").replace(/^(ENV|QLT)-/i, "");
@@ -98,7 +99,7 @@ export default function WorkerHomePage() {
                 <button key={`worker-alert-${alert.alertId}`} className="issue-card" onClick={() => openAlert(alert)}>
                   <div>
                     <strong>{alert.zoneName} · {alert.itemName}</strong>
-                    <p>{alert.alertMessage || `${alert.measuredValue} / 기준 ${alert.standardRange}`}</p>
+                    <p>{alert.alertMessage ? formatNumberText(alert.alertMessage) : `${formatNumber(alert.measuredValue)} / 기준 ${formatNumberText(alert.standardRange)}`}</p>
                     <small>{alert.createdAt} · {alertStatusLabel(alert.alertStatus)}</small>
                   </div>
                   <StatusBadge value={alert.alertLevel || alert.severity} />
@@ -119,7 +120,7 @@ export default function WorkerHomePage() {
                 <button key={`action-${issue.issueId}`} className="issue-card" onClick={() => navigate(issueTarget(issue))}>
                   <div>
                     <strong>{issue.zoneName} · {issue.itemName}</strong>
-                    <p>{issue.batchName} / {issue.measuredValue} / 기준 {issue.standardRange}</p>
+                    <p>{issue.batchName} / {formatNumber(issue.measuredValue)} / 기준 {formatNumberText(issue.standardRange)}</p>
                     <small>{issue.occurredAt} · {issueStatusLabel("env", issue.status)}</small>
                   </div>
                   <StatusBadge value={issue.severity} />

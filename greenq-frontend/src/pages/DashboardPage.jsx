@@ -6,6 +6,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import { greenqApi } from "../api/greenqApi.js";
 import { alertStatusLabel, issueStatusLabel, labelOf } from "../data/displayLabels.js";
 import { asArray, useApiData } from "../hooks/useApiData.js";
+import { formatNumber, formatNumberText } from "../utils/numberFormat.js";
 
 function alertTarget(alert) {
   const rawId = alert.rawId || alert.envNcId || String(alert.issueId || "").replace(/^(ENV|QLT)-/i, "");
@@ -107,13 +108,13 @@ export default function DashboardPage() {
           <div className="panel-head"><h3>미확인 환경 알림</h3><button className="text-button" onClick={() => navigate("/issues?type=env")}>전체 보기</button></div>
           {alerts.length === 0 ? <p className="muted-text">미확인 환경 알림이 없습니다.</p> : <div className="issue-list">{alerts.slice(0, 5).map((alert) => (
             <button key={`dashboard-alert-${alert.alertId}`} className="issue-card" onClick={() => navigate(alertTarget(alert))}>
-              <div><strong>{alert.zoneName} · {alert.itemName}</strong><p>{alert.alertMessage || `${alert.measuredValue} / 기준 ${alert.standardRange}`}</p><small>{alert.createdAt} · {issueStatusLabel("env", alert.status)} · {alertStatusLabel(alert.alertStatus)}</small></div>
+              <div><strong>{alert.zoneName} · {alert.itemName}</strong><p>{alert.alertMessage ? formatNumberText(alert.alertMessage) : `${formatNumber(alert.measuredValue)} / 기준 ${formatNumberText(alert.standardRange)}`}</p><small>{alert.createdAt} · {issueStatusLabel("env", alert.status)} · {alertStatusLabel(alert.alertStatus)}</small></div>
               <StatusBadge value={alert.alertLevel || alert.severity} />
             </button>
           ))}</div>}
         </div>
-        <div className="panel"><div className="panel-head"><h3>최근 환경 로그</h3><button className="text-button" onClick={() => navigate("/environment")}>전체 보기</button></div><table><thead><tr><th>측정시각</th><th>배치</th><th>온도</th><th>pH</th><th>상태</th></tr></thead><tbody>{logs.length === 0 ? <tr><td colSpan={5} className="empty-table-cell">최근 환경 로그가 없습니다.</td></tr> : logs.slice(0, 5).map((log) => <tr key={log.envLogId} onClick={() => navigate(`/environment/logs/${log.envLogId}`)}><td>{log.measuredAt}</td><td>{log.batchName}</td><td>{log.temperature}℃</td><td>{log.ph}</td><td><StatusBadge value={log.envStatus} /></td></tr>)}</tbody></table></div>
-        <div className="panel"><div className="panel-head"><h3>최근 부적합</h3><button className="text-button" onClick={() => navigate("/issues")}>전체 보기</button></div>{issues.length === 0 ? <p className="muted-text">최근 부적합 이력이 없습니다.</p> : <div className="issue-list">{issues.slice(0, 5).map((issue) => <button key={`${issue.issueType}-${issue.issueId}`} className="issue-card" onClick={() => navigate(issueTarget(issue))}><div><strong>{issue.zoneName} · {issue.itemName}</strong><p>{issue.measuredValue} / 기준 {issue.standardRange}</p></div><StatusBadge value={issue.severity} /></button>)}</div>}</div>
+        <div className="panel"><div className="panel-head"><h3>최근 환경 로그</h3><button className="text-button" onClick={() => navigate("/environment")}>전체 보기</button></div><table><thead><tr><th>측정시각</th><th>배치</th><th>온도</th><th>pH</th><th>상태</th></tr></thead><tbody>{logs.length === 0 ? <tr><td colSpan={5} className="empty-table-cell">최근 환경 로그가 없습니다.</td></tr> : logs.slice(0, 5).map((log) => <tr key={log.envLogId} onClick={() => navigate(`/environment/logs/${log.envLogId}`)}><td>{log.measuredAt}</td><td>{log.batchName}</td><td>{formatNumber(log.temperature)}℃</td><td>{formatNumber(log.ph)}</td><td><StatusBadge value={log.envStatus} /></td></tr>)}</tbody></table></div>
+        <div className="panel"><div className="panel-head"><h3>최근 부적합</h3><button className="text-button" onClick={() => navigate("/issues")}>전체 보기</button></div>{issues.length === 0 ? <p className="muted-text">최근 부적합 이력이 없습니다.</p> : <div className="issue-list">{issues.slice(0, 5).map((issue) => <button key={`${issue.issueType}-${issue.issueId}`} className="issue-card" onClick={() => navigate(issueTarget(issue))}><div><strong>{issue.zoneName} · {issue.itemName}</strong><p>{formatNumber(issue.measuredValue)} / 기준 {formatNumberText(issue.standardRange)}</p></div><StatusBadge value={issue.severity} /></button>)}</div>}</div>
       </section>
     </div>
   );
