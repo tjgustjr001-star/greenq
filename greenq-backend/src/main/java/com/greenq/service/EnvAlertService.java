@@ -8,6 +8,8 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -144,12 +146,12 @@ public class EnvAlertService {
 
     private String alertMessage(EnvNonconformity nc, boolean createdNonconformity) {
         String statusWord = createdNonconformity ? "발생" : "지속/갱신";
-        String value = nc.getMeasuredValue() == null ? "-" : String.valueOf(nc.getMeasuredValue().stripTrailingZeros());
+        String value = plainNumber(nc.getMeasuredValue());
         String range = (nc.getStandardMin() == null && nc.getStandardMax() == null)
                 ? "-"
-                : String.valueOf(nc.getStandardMin() == null ? "" : nc.getStandardMin().stripTrailingZeros())
+                : (nc.getStandardMin() == null ? "" : plainNumber(nc.getStandardMin()))
                     + " ~ "
-                    + String.valueOf(nc.getStandardMax() == null ? "" : nc.getStandardMax().stripTrailingZeros());
+                    + (nc.getStandardMax() == null ? "" : plainNumber(nc.getStandardMax()));
         return "환경 부적합이 " + statusWord + "했습니다. 항목: " + safe(nc.getItemName(), nc.getItemCode())
                 + ", 측정값: " + value + ", 기준: " + range
                 + ", 심각도: " + normalizeLevel(nc.getSeverity()) + ".";
