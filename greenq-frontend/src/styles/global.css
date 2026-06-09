@@ -3935,12 +3935,12 @@ button:disabled {
 
 .deleted-table th:nth-child(1),
 .deleted-table td:nth-child(1) {
-  width: 16%;
+  width: 20%;
 }
 
 .deleted-table th:nth-child(2),
 .deleted-table td:nth-child(2) {
-  width: auto;
+  width: 35%;
 }
 
 .deleted-table th:nth-child(3),
@@ -5006,3 +5006,81 @@ button:disabled {
     text-align: left;
   }
 }
+
+.user-table-panel {
+  width: 100%;
+  overflow-x: auto;
+  padding: 0;
+}
+
+.user-table {
+  width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.user-table .user-col-login {
+  width: 16%;
+}
+
+.user-table .user-col-name {
+  width: 18%;
+}
+
+.user-table .user-col-role {
+  width: 12%;
+}
+
+.user-table .user-col-status {
+  width: 12%;
+}
+
+.user-table .user-col-email {
+  width: 26%;
+}
+
+.user-table .user-col-created {
+  width: 16%;
+}
+
+.user-table th,
+.user-table td {
+  padding: 24px 22px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.user-table th {
+  font-weight: 800;
+  color: #3f4f46;
+}
+
+.user-table td {
+  line-height: 1.4;
+}
+
+.user-table th:nth-child(3),
+.user-table th:nth-child(4),
+.user-table td:nth-child(3),
+.user-table td:nth-child(4),
+.user-table th:nth-child(6),
+.user-table td:nth-child(6){
+  text-align: center;
+}
+
+
+
+.user-email,
+.user-created-at {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.user-created-at {
+  font-variant-numeric: tabular-nums;
+}
+

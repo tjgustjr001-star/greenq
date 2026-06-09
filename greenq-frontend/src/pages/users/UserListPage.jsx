@@ -16,7 +16,15 @@ const initialForm = {
   email: "",
   phone: "",
 };
+const formatDateTime = (value) => {
+  if (!value) return "-";
 
+  const text = String(value)
+    .replace("T", " ")
+    .replace(/\.\d+$/, "");
+
+  return text.length > 16 ? text.slice(0, 16) : text;
+};
 export default function UserListPage() {
   const user = getCurrentUser();
   const isAdmin = (user.role || user.roleCode) === "ADMIN";
@@ -77,7 +85,62 @@ export default function UserListPage() {
         </div>
       </Modal>
 
-      <div className="panel"><table><thead><tr><th>로그인 ID</th><th>사용자명</th><th>권한</th><th>상태</th><th>이메일</th><th>생성일</th></tr></thead><tbody>{asArray(data).map((item) => <tr key={item.userId}><td><strong>{item.loginId}</strong></td><td>{item.userName}</td><td><StatusBadge value={item.roleCode} /></td><td><StatusBadge value={item.accountStatus} /></td><td>{item.email || "-"}</td><td>{item.createdAt}</td></tr>)}</tbody></table></div>
+      <div className="panel user-table-panel">
+  <table className="user-table">
+    <colgroup>
+      <col className="user-col-login" />
+      <col className="user-col-name" />
+      <col className="user-col-role" />
+      <col className="user-col-status" />
+      <col className="user-col-email" />
+      <col className="user-col-created" />
+    </colgroup>
+
+    <thead>
+      <tr>
+        <th>로그인 ID</th>
+        <th>사용자명</th>
+        <th>권한</th>
+        <th>상태</th>
+        <th>이메일</th>
+        <th>생성일</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {asArray(data).map((item) => (
+        <tr key={item.userId}>
+          <td>
+            <strong>{item.loginId}</strong>
+          </td>
+
+          <td>{item.userName}</td>
+
+          <td>
+            <StatusBadge value={item.roleCode} />
+          </td>
+
+          <td>
+            <StatusBadge value={item.accountStatus} />
+          </td>
+
+          <td>
+            <span className="user-email" title={item.email || ""}>
+              {item.email || "-"}
+            </span>
+          </td>
+
+          <td>
+            <span className="user-created-at" title={item.createdAt || ""}>
+              {formatDateTime(item.createdAt)}
+            </span>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
     </div>
   );
 }
+
