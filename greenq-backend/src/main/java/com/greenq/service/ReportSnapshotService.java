@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class ReportSnapshotService {
         int actionCount = envActionCount(filter, startAt, endExclusive);
         int reviewCount = qualityReviewCount(filter, startAt, endExclusive);
         int reflectedCount = qualityReportReflectedCount(filter, startAt, endExclusive);
+        List<Map<String, Object>> qualityReportTargetItems = qualityReportTargetItems(filter, startAt, endExclusive);
         String envTopItems = topIssueItems("env_nonconformity", "occurred_at", filter, startAt, endExclusive);
         String qualityTopItems = topIssueItems("quality_nonconformity", "occurred_at", filter, startAt, endExclusive);
 
@@ -51,10 +53,10 @@ public class ReportSnapshotService {
         String envNcSummary = "환경 부적합 " + envNc.totalCount() + "건, 주의 " + envNc.cautionCount() + "건, 경고 " + envNc.failCount()
                 + "건, 조치 이력 " + actionCount + "건" + (envTopItems.isBlank() ? "" : " / 주요 항목: " + envTopItems);
         String qualityNcSummary = "품질 부적합 " + qualityNc.totalCount() + "건, 주의 " + qualityNc.cautionCount() + "건, 경고 " + qualityNc.failCount()
-                + "건, 검토 이력 " + reviewCount + "건, 리포트 반영 " + reflectedCount + "건"
+                + "건, 검토 이력 " + reviewCount + "건, 리포트 반영 대상 " + reflectedCount + "건"
                 + (qualityTopItems.isBlank() ? "" : " / 주요 항목: " + qualityTopItems);
         String guideSummary = makeGuide(env, quality, envNc, qualityNc, actionCount, reviewCount, reflectedCount, envTopItems, qualityTopItems);
-        String conditionJson = makeConditionJson(request, filter, startDate, endDate, env, quality, envNc, qualityNc, actionCount, reviewCount, reflectedCount, envTopItems, qualityTopItems);
+        String conditionJson = makeConditionJson(request, filter, startDate, endDate, env, quality, envNc, qualityNc, actionCount, reviewCount, reflectedCount, envTopItems, qualityTopItems, qualityReportTargetItems);
 
         return new ReportSnapshot(envSummary, qualitySummary, envNcSummary, qualityNcSummary, guideSummary, conditionJson);
     }
@@ -216,20 +218,67 @@ public class ReportSnapshotService {
     private int qualityReportReflectedCount(ScopeFilter filter, LocalDateTime startAt, LocalDateTime endExclusive) {
         String sql = """
                 select count(*)
-                from quality_evaluation qe
-                join growth_measurement gm on gm.measurement_id = qe.measurement_id
-                join cultivation_batch b on b.batch_id = qe.batch_id
+                from quality_nonconformity nc
+                join growth_measurement gm on gm.measurement_id = nc.measurement_id
+                join cultivation_batch b on b.batch_id = nc.batch_id
                 join crop c on c.crop_id = b.crop_id
                 join zone z on z.zone_id = b.zone_id
-                where coalesce(qe.report_reflected_yn, 'N') = 'Y'
+                where coalesce(nc.report_include_yn, 'N') = 'Y'
+                  and coalesce(nc.delete_yn, 'N') <> 'Y'
                   and coalesce(gm.delete_yn, 'N') <> 'Y'
                   and coalesce(b.delete_yn, 'N') <> 'Y'
                   and coalesce(c.delete_yn, 'N') <> 'Y'
                   and coalesce(z.delete_yn, 'N') <> 'Y'
-                  and qe.evaluated_at >= :startAt and qe.evaluated_at < :endAt
+                  and nc.occurred_at >= :startAt and nc.occurred_at < :endAt
                 """ + scopeWhere(filter);
         Object[] row = singleRow(sql, filter, startAt, endExclusive);
         return intVal(row[0]);
+    }
+
+    private List<Map<String, Object>> qualityReportTargetItems(ScopeFilter filter, LocalDateTime startAt, LocalDateTime endExclusive) {
+        String sql = """
+                select nc.quality_nc_id, nc.occurred_at, nc.item_name, nc.item_code,
+                       nc.measured_value, qei.measured_text_value, nc.standard_min, nc.standard_max,
+                       nc.deviation_rate, nc.severity, nc.quality_nc_status, nc.recommended_next_action
+                from quality_nonconformity nc
+                join growth_measurement gm on gm.measurement_id = nc.measurement_id
+                join cultivation_batch b on b.batch_id = nc.batch_id
+                join crop c on c.crop_id = b.crop_id
+                join zone z on z.zone_id = b.zone_id
+                left join quality_evaluation_item qei on qei.quality_eval_item_id = nc.quality_eval_item_id
+                where coalesce(nc.report_include_yn, 'N') = 'Y'
+                  and coalesce(nc.delete_yn, 'N') <> 'Y'
+                  and coalesce(gm.delete_yn, 'N') <> 'Y'
+                  and coalesce(b.delete_yn, 'N') <> 'Y'
+                  and coalesce(c.delete_yn, 'N') <> 'Y'
+                  and coalesce(z.delete_yn, 'N') <> 'Y'
+                  and nc.occurred_at >= :startAt and nc.occurred_at < :endAt
+                """ + scopeWhere(filter) + """
+                order by case nc.severity when 'FAIL' then 1 when 'CAUTION' then 2 else 3 end,
+                         nc.occurred_at desc, nc.quality_nc_id desc
+                limit 10
+                """;
+        var query = em.createNativeQuery(sql).setParameter("startAt", startAt).setParameter("endAt", endExclusive);
+        applyScopeParams(query, filter);
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = query.getResultList();
+        return rows.stream().map(r -> {
+            String measuredValue = r[4] == null ? strValue(r[5]) : fmt(bd(r[4]));
+            return mapOf(
+                    "qualityNcId", r[0],
+                    "occurredAt", formatDateTime(r[1]),
+                    "itemName", r[2],
+                    "itemCode", r[3],
+                    "measuredValue", measuredValue,
+                    "standardMin", fmt(bd(r[6])),
+                    "standardMax", fmt(bd(r[7])),
+                    "standardRange", rangeText(r[6], r[7]),
+                    "deviationRate", fmt(bd(r[8])),
+                    "severity", r[9],
+                    "qualityNcStatus", r[10],
+                    "recommendedNextAction", r[11]
+            );
+        }).toList();
     }
 
     private String topIssueItems(String tableName, String timeColumn, ScopeFilter filter, LocalDateTime startAt, LocalDateTime endExclusive) {
@@ -288,12 +337,15 @@ public class ReportSnapshotService {
         if (env.totalCount() == 0 && quality.totalCount() == 0) {
             return "선택 기간에 집계할 환경/품질 데이터가 부족합니다. 기간 또는 리포트 대상을 다시 확인하세요.";
         }
+        if (reflectedCount > 0) {
+            return "리포트 반영 대상으로 표시된 품질 부적합이 있습니다. 해당 항목의 측정값, 기준 이탈률, 검토 메모를 확인하고 다음 재배 회차의 운영 조건 개선에 활용하세요.";
+        }
         if (envNc.failCount() > 0 || qualityNc.failCount() > 0) {
             String topic = !envTopItems.isBlank() ? envTopItems : qualityTopItems;
             return "경고 항목이 존재합니다. " + (topic.isBlank() ? "부적합 항목" : topic) + "을 우선 검토하고, 조치/검토 이력을 확인한 뒤 다음 재배 회차의 기준값 또는 운영 조건을 조정하세요.";
         }
         if (qualityNc.totalCount() > 0 && reflectedCount < qualityNc.totalCount()) {
-            return "품질 부적합 중 리포트 반영 전 항목이 있습니다. 품질 검토 메모를 확인하고 REFLECTED 상태로 전환한 뒤 리포트에 반영하세요.";
+            return "품질 부적합 중 리포트 반영 대상으로 표시되지 않은 항목이 있습니다. 검토 메모를 확인하고 리포트에 포함할 항목은 '리포트 반영 대상'으로 표시하세요.";
         }
         if (envNc.cautionCount() > 0 || qualityNc.cautionCount() > 0 || env.cautionCount() > 0 || quality.cautionCount() > 0) {
             return "주의 항목이 확인되었습니다. 동일 항목이 반복되는지 모니터링하고, 작업자 조치 메모 또는 품질 검토 메모를 남기세요.";
@@ -307,7 +359,7 @@ public class ReportSnapshotService {
         return "선택 기간의 환경과 품질 상태가 안정적입니다. 등록된 조치/검토 이력을 참고하여 현재 운영 조건을 유지하세요.";
     }
 
-    private String makeConditionJson(Map<String, Object> request, ScopeFilter filter, LocalDate startDate, LocalDate endDate, EnvStats env, QualityStats quality, NcStats envNc, NcStats qualityNc, int actionCount, int reviewCount, int reflectedCount, String envTopItems, String qualityTopItems) {
+    private String makeConditionJson(Map<String, Object> request, ScopeFilter filter, LocalDate startDate, LocalDate endDate, EnvStats env, QualityStats quality, NcStats envNc, NcStats qualityNc, int actionCount, int reviewCount, int reflectedCount, String envTopItems, String qualityTopItems, List<Map<String, Object>> qualityReportTargetItems) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("reportType", def(str(request, "reportType"), "DAILY").toUpperCase());
         snapshot.put("reportScope", filter.scope());
@@ -347,27 +399,77 @@ public class ReportSnapshotService {
         snapshot.put("envActionTotal", actionCount);
         snapshot.put("qualityReviewTotal", reviewCount);
         snapshot.put("qualityReportReflectedTotal", reflectedCount);
+        snapshot.put("qualityReportTargetTotal", reflectedCount);
+        snapshot.put("qualityReportTargetItems", qualityReportTargetItems);
         return toJson(snapshot);
     }
 
     private String toJson(Map<String, Object> map) {
-        StringBuilder sb = new StringBuilder("{");
-        boolean first = true;
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            if (!first) sb.append(',');
-            first = false;
-            sb.append('"').append(escape(entry.getKey())).append('"').append(':');
-            Object value = entry.getValue();
-            if (value == null) sb.append("null");
-            else if (value instanceof Number || value instanceof Boolean) sb.append(value);
-            else sb.append('"').append(escape(String.valueOf(value))).append('"');
+        return jsonValue(map);
+    }
+
+    private String jsonValue(Object value) {
+        if (value == null) return "null";
+        if (value instanceof Number || value instanceof Boolean) return String.valueOf(value);
+        if (value instanceof Map<?, ?> map) {
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (!first) sb.append(',');
+                first = false;
+                sb.append('"').append(escape(String.valueOf(entry.getKey()))).append('"').append(':');
+                sb.append(jsonValue(entry.getValue()));
+            }
+            sb.append('}');
+            return sb.toString();
         }
-        sb.append('}');
-        return sb.toString();
+        if (value instanceof Iterable<?> iterable) {
+            StringBuilder sb = new StringBuilder("[");
+            boolean first = true;
+            for (Object item : iterable) {
+                if (!first) sb.append(',');
+                first = false;
+                sb.append(jsonValue(item));
+            }
+            sb.append(']');
+            return sb.toString();
+        }
+        return '"' + escape(String.valueOf(value)) + '"';
     }
 
     private String escape(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static Map<String, Object> mapOf(Object... values) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (int i = 0; i + 1 < values.length; i += 2) {
+            map.put(String.valueOf(values[i]), values[i + 1]);
+        }
+        return map;
+    }
+
+    private String strValue(Object value) {
+        if (value == null || String.valueOf(value).isBlank()) return "-";
+        return String.valueOf(value);
+    }
+
+    private String rangeText(Object min, Object max) {
+        String minText = fmt(bd(min));
+        String maxText = fmt(bd(max));
+        if ("-".equals(minText) && "-".equals(maxText)) return "-";
+        return minText + " ~ " + maxText;
+    }
+
+    private String formatDateTime(Object value) {
+        if (value == null) return "-";
+        if (value instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        }
+        if (value instanceof LocalDateTime dateTime) {
+            return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        }
+        return String.valueOf(value);
     }
 
     private String severityLabel(String severity) {

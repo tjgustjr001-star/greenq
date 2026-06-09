@@ -4,7 +4,7 @@ import { greenqApi } from "../../api/greenqApi.js";
 import EmptyState from "../../components/EmptyState.jsx";
 import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { labelOf } from "../../data/displayLabels.js";
+import { issueStatusLabel, labelOf } from "../../data/displayLabels.js";
 import { useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
 
@@ -318,12 +318,66 @@ function TopNonconformityPanel({ title, rows }) {
   );
 }
 
+function ReportTargetQualityPanel({ items }) {
+  const rows = asList(items);
+  return (
+    <div className="panel table-panel report-target-quality-panel">
+      <div className="panel-head">
+        <div>
+          <h3>리포트 반영 대상 품질 부적합</h3>
+          <p>리포트 발급 당시 반영 대상으로 지정된 품질 부적합 항목입니다.</p>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <p className="muted-text">리포트 반영 대상으로 지정된 품질 부적합이 없습니다.</p>
+      ) : (
+        <table className="data-table report-target-quality-table">
+          <colgroup>
+            <col className="col-date" />
+            <col className="col-item" />
+            <col className="col-value" />
+            <col className="col-standard" />
+            <col className="col-status" />
+            <col className="col-status" />
+            <col className="col-guide" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>발생일시</th>
+              <th>항목</th>
+              <th>측정값</th>
+              <th>기준</th>
+              <th>심각도</th>
+              <th>검토 상태</th>
+              <th>권장 조치</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((item, index) => (
+              <tr key={item.qualityNcId || index}>
+                <td>{item.occurredAt || "-"}</td>
+                <td className="text-left"><strong>{item.itemName || item.itemCode || "-"}</strong></td>
+                <td>{item.measuredValue ?? "-"}</td>
+                <td className="text-left"><span className="table-text-wrap">{item.standardRange || "-"}</span></td>
+                <td><StatusBadge value={item.severity} /></td>
+                <td>{issueStatusLabel("quality", item.qualityNcStatus)}</td>
+                <td className="text-left"><span className="table-text-wrap">{item.recommendedNextAction || "-"}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 export default function ReportDetailPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
   const isAdmin = (getCurrentUser().role || getCurrentUser().roleCode) === "ADMIN";
   const { data: report, loading, error } = useApiData(() => greenqApi.report(reportId), [reportId]);
   const condition = useMemo(() => parseCondition(report?.generatedConditionJson), [report]);
+  const qualityReportTargetTotal = condition?.qualityReportTargetTotal ?? condition?.qualityReportReflectedTotal;
   const deleteReport = async () => {
     if (!window.confirm("리포트를 임시 삭제 처리합니다.")) return;
     await greenqApi.deleteReport(reportId);
@@ -355,7 +409,7 @@ export default function ReportDetailPage() {
         <div className="report-kpi-card"><span>환경 로그</span><strong>{condition?.envTotal ?? "-"}</strong><small>정상 {condition?.envNormal ?? "-"} / 주의 {condition?.envCaution ?? "-"} / 경고 {condition?.envFail ?? "-"}</small></div>
         <div className="report-kpi-card"><span>품질 실측</span><strong>{condition?.qualityTotal ?? "-"}</strong><small>정상 {condition?.qualityNormal ?? "-"} / 주의 {condition?.qualityCaution ?? "-"} / 경고 {condition?.qualityFail ?? "-"}</small></div>
         <div className="report-kpi-card"><span>환경 부적합</span><strong>{condition?.envNcTotal ?? "-"}</strong><small>조치 이력 {condition?.envActionTotal ?? "-"}건</small></div>
-        <div className="report-kpi-card"><span>품질 부적합</span><strong>{condition?.qualityNcTotal ?? "-"}</strong><small>검토 {condition?.qualityReviewTotal ?? "-"}건 / 리포트 반영 {condition?.qualityReportReflectedTotal ?? "-"}건</small></div>
+        <div className="report-kpi-card"><span>품질 부적합</span><strong>{condition?.qualityNcTotal ?? "-"}</strong><small>검토 {condition?.qualityReviewTotal ?? "-"}건 / 반영 대상 {qualityReportTargetTotal ?? "-"}건</small></div>
       </section>
 
       <ReportTrendPanel rows={report.environmentTrend} />
@@ -373,6 +427,8 @@ export default function ReportDetailPage() {
         <SummaryPanel title="환경 부적합 요약">{report.envNcSummary}</SummaryPanel>
         <SummaryPanel title="품질 부적합 요약">{report.qualityNcSummary}</SummaryPanel>
       </section>
+
+      <ReportTargetQualityPanel items={condition?.qualityReportTargetItems} />
 
       <div className="panel report-guide-panel">
         <h3>관리 가이드</h3>

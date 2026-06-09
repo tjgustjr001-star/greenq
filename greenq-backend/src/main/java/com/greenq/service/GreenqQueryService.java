@@ -402,7 +402,7 @@ public class GreenqQueryService {
     public List<Map<String, Object>> qualityReviews(Long qualityNcId) {
         String sql = """
                 select qr.quality_review_id, qr.review_at, qr.review_content, qr.reviewed_by, ua.user_name,
-                       qn.quality_nc_status, coalesce(qe.report_reflected_yn, 'N') as report_reflected_yn, qr.created_at
+                       coalesce(qn.report_include_yn, 'N') as report_include_yn, qr.created_at
                 from quality_nonconformity qn
                 join quality_evaluation qe on qe.quality_eval_id = qn.quality_eval_id
                 join quality_review_log qr on qr.quality_eval_id = qn.quality_eval_id
@@ -413,8 +413,8 @@ public class GreenqQueryService {
         @SuppressWarnings("unchecked") List<Object[]> rows = em.createNativeQuery(sql).setParameter("id", qualityNcId).getResultList();
         return rows.stream().map(r -> mapOf(
                 "qualityReviewId", r[0], "reviewAt", dtObj(r[1]), "reviewContent", r[2],
-                "reviewedBy", r[3], "reviewedByName", r[4], "reviewStatusAfter", r[5],
-                "reportReflectedYn", r[6], "createdAt", dtObj(r[7])
+                "reviewedBy", r[3], "reviewedByName", r[4],
+                "reportIncludeYn", r[5], "reportReflectedYn", r[5], "createdAt", dtObj(r[6])
         )).toList();
     }
 
@@ -459,7 +459,8 @@ public class GreenqQueryService {
                        nc.deviation_rate, nc.recommended_next_action, b.batch_name, z.zone_name,
                        nc.quality_eval_id, nc.measurement_id, nc.quality_eval_item_id, nc.crop_id,
                        qei.measured_text_value,
-                       coalesce(qe.report_reflected_yn, 'N') as report_reflected_yn,
+                       coalesce(nc.report_include_yn, 'N') as report_include_yn,
+                       coalesce(nc.report_include_yn, 'N') as report_reflected_yn,
                        coalesce(count(qr.quality_review_id), 0) as review_count,
                        max(qr.review_at) as latest_review_at
                 from quality_nonconformity nc
@@ -479,7 +480,7 @@ public class GreenqQueryService {
                          nc.item_code, nc.item_name, nc.measured_value, nc.standard_min, nc.standard_max,
                          nc.deviation_rate, nc.recommended_next_action, b.batch_name, z.zone_name,
                          nc.quality_eval_id, nc.measurement_id, nc.quality_eval_item_id, nc.crop_id,
-                         qei.measured_text_value, qe.report_reflected_yn
+                         qei.measured_text_value, nc.report_include_yn
                 """;
         @SuppressWarnings("unchecked") List<Object[]> rows = em.createNativeQuery(sql).getResultList();
         return rows.stream().map(r -> mapOf(
@@ -489,7 +490,7 @@ public class GreenqQueryService {
                 "deviationRate", num(r[9]), "guide", r[10], "guideMessage", r[10], "batchName", r[11], "zoneName", r[12],
                 "qualityEvalId", r[13], "measurementId", r[14], "qualityEvalItemId", r[15], "cropId", r[16],
                 "measuredTextValue", r[17], "measuredValueDisplay", r[6] == null ? r[17] : num(r[6]),
-                "reportReflectedYn", r[18], "reviewCount", r[19], "latestReviewAt", dtObj(r[20]), "actionRequired", false
+                "reportIncludeYn", r[18], "reportReflectedYn", r[19], "reviewCount", r[20], "latestReviewAt", dtObj(r[21]), "actionRequired", false
         )).toList();
     }
 
@@ -589,7 +590,7 @@ public class GreenqQueryService {
         String sql = """
                 select nc.quality_nc_id, nc.occurred_at, nc.quality_nc_status, nc.severity, nc.item_code, nc.item_name,
                        nc.measured_value, qei.measured_text_value, nc.standard_min, nc.standard_max, nc.deviation_rate, nc.recommended_next_action,
-                       nc.quality_eval_id, nc.quality_eval_item_id, coalesce(qe.report_reflected_yn, 'N')
+                       nc.quality_eval_id, nc.quality_eval_item_id, coalesce(nc.report_include_yn, 'N')
                 from quality_nonconformity nc
                 join growth_measurement gm on gm.measurement_id = nc.measurement_id
                 join quality_evaluation qe on qe.quality_eval_id = nc.quality_eval_id
@@ -606,15 +607,13 @@ public class GreenqQueryService {
                 "measuredValue", num(r[6]), "measuredTextValue", r[7], "measuredValueDisplay", r[6] == null ? r[7] : num(r[6]),
                 "standardRange", range(r[8], r[9]), "standardMin", num(r[8]), "standardMax", num(r[9]),
                 "deviationRate", num(r[10]), "guide", r[11], "guideMessage", r[11], "qualityEvalId", r[12],
-                "qualityEvalItemId", r[13], "reportReflectedYn", r[14]
+                "qualityEvalItemId", r[13], "reportIncludeYn", r[14], "reportReflectedYn", r[14]
         )).toList();
     }
 
     private List<Map<String, Object>> qualityReviewsByMeasurement(Long measurementId) {
         String sql = """
-                select qr.quality_review_id, qr.review_at, qr.review_content, qr.reviewed_by, ua.user_name,
-                       case when coalesce(qe.report_reflected_yn, 'N') = 'Y' then 'REFLECTED' else 'REVIEWED' end as review_status_after,
-                       qe.report_reflected_yn, qr.created_at
+                select qr.quality_review_id, qr.review_at, qr.review_content, qr.reviewed_by, ua.user_name, qr.created_at
                 from quality_evaluation qe
                 join quality_review_log qr on qr.quality_eval_id = qe.quality_eval_id
                 left join user_account ua on ua.user_id = qr.reviewed_by
@@ -624,8 +623,7 @@ public class GreenqQueryService {
         @SuppressWarnings("unchecked") List<Object[]> rows = em.createNativeQuery(sql).setParameter("measurementId", measurementId).getResultList();
         return rows.stream().map(r -> mapOf(
                 "qualityReviewId", r[0], "reviewAt", dtObj(r[1]), "reviewContent", r[2],
-                "reviewedBy", r[3], "reviewedByName", r[4], "reviewStatusAfter", r[5],
-                "reportReflectedYn", r[6], "createdAt", dtObj(r[7])
+                "reviewedBy", r[3], "reviewedByName", r[4], "createdAt", dtObj(r[5])
         )).toList();
     }
 
@@ -1055,11 +1053,17 @@ public class GreenqQueryService {
         List<Map<String, Object>> ms = measurements();
         List<Map<String, Object>> unreadAlerts = envAlerts("UNREAD", null);
         List<Map<String, Object>> recentAlerts = envAlerts(null, null);
+        long envOpenIssueCount = iss.stream().filter(this::isDashboardEnvOpenIssue).count();
+        long qualityRecordedIssueCount = iss.stream().filter(this::isDashboardQualityRecordedIssue).count();
+        long actionRequiredIssueCount = envOpenIssueCount + qualityRecordedIssueCount;
         return mapOf(
                 "cropCount", crops().size(),
                 "zoneCount", zones().size(),
                 "growingBatchCount", batches().stream().filter(b -> "GROWING".equals(b.get("batchStatus"))).count(),
-                "openIssueCount", iss.stream().filter(i -> !String.valueOf(i.get("status")).contains("RESOLVED") && !String.valueOf(i.get("status")).contains("REFLECTED")).count(),
+                "openIssueCount", actionRequiredIssueCount,
+                "actionRequiredIssueCount", actionRequiredIssueCount,
+                "envOpenIssueCount", envOpenIssueCount,
+                "qualityRecordedIssueCount", qualityRecordedIssueCount,
                 "unreadEnvAlertCount", unreadAlerts.size(),
                 "latestEnvironmentLogs", logs.stream().limit(5).toList(),
                 "recentEnvAlerts", recentAlerts.stream().limit(5).toList(),
@@ -1067,6 +1071,19 @@ public class GreenqQueryService {
                 "recentIssues", iss.stream().limit(5).toList(),
                 "recentMeasurements", ms.stream().limit(5).toList()
         );
+    }
+
+    private boolean isDashboardEnvOpenIssue(Map<String, Object> issue) {
+        String issueType = String.valueOf(issue.get("issueType")).toUpperCase();
+        String status = String.valueOf(issue.get("status")).toUpperCase();
+        return "ENV".equals(issueType)
+                && ("OPEN".equals(status) || "ACKNOWLEDGED".equals(status) || "IN_PROGRESS".equals(status));
+    }
+
+    private boolean isDashboardQualityRecordedIssue(Map<String, Object> issue) {
+        String issueType = String.valueOf(issue.get("issueType")).toUpperCase();
+        String status = String.valueOf(issue.get("status")).toUpperCase();
+        return "QUALITY".equals(issueType) && "RECORDED".equals(status);
     }
 
     private static Map<String, Object> mapOf(Object... args) {

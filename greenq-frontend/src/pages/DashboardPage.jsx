@@ -27,7 +27,10 @@ export default function DashboardPage() {
   const latestEnv = logs[0] || {};
   const latestQuality = measurements[0] || {};
   const unreadAlerts = data?.unreadEnvAlertCount ?? alerts.length;
-  const openIssues = data?.openIssueCount ?? issues.length;
+  const openIssues = data?.actionRequiredIssueCount ?? data?.openIssueCount ?? issues.length;
+  const envOpenIssues = data?.envOpenIssueCount ?? 0;
+  const qualityRecordedIssues = data?.qualityRecordedIssueCount ?? 0;
+  const issueHint = `환경 미해결 ${envOpenIssues}건 · 품질 검토대기 ${qualityRecordedIssues}건`;
   const latestEnvValue = latestEnv.envStatus ? labelOf(latestEnv.envStatus) : "없음";
   const latestQualityValue = latestQuality.qualityStatus ? labelOf(latestQuality.qualityStatus) : "없음";
 
@@ -42,7 +45,7 @@ export default function DashboardPage() {
         <StatCard label="미확인 환경 알림" value={unreadAlerts} tone={unreadAlerts > 0 ? "red" : "green"} />
         <StatCard label="최근 환경 상태" value={latestEnvValue} hint={latestEnv.measuredAt || "-"} tone={latestEnv.envStatus === "FAIL" ? "red" : "green"} />
         <StatCard label="최근 품질 상태" value={latestQualityValue} hint={latestQuality.measuredAt || "-"} tone={latestQuality.qualityStatus === "FAIL" ? "red" : "blue"} />
-        <StatCard label="미조치 부적합" value={openIssues} tone={openIssues > 0 ? "red" : "green"} />
+        <StatCard label="처리 필요 부적합" value={openIssues} hint={issueHint} tone={openIssues > 0 ? "red" : "green"} />
         <StatCard label="등록 작물" value={data?.cropCount ?? 0}  />
       </section>
 
@@ -54,8 +57,8 @@ export default function DashboardPage() {
         </button>
         <button type="button" className={openIssues > 0 ? "dashboard-priority-card danger" : "dashboard-priority-card"} onClick={() => navigate("/issues")}>
           <span>2순위</span>
-          <strong>부적합 조치 점검</strong>
-          <p>{openIssues > 0 ? `${openIssues}건의 미조치 부적합이 있습니다.` : "미조치 부적합이 없습니다."}</p>
+          <strong>처리 필요 부적합</strong>
+          <p>{openIssues > 0 ? `${openIssues}건의 처리 필요 부적합이 있습니다. ${issueHint}` : "처리 필요 부적합이 없습니다."}</p>
         </button>
         <button type="button" className="dashboard-priority-card" onClick={() => navigate("/reports")}>
           <span>마감</span>

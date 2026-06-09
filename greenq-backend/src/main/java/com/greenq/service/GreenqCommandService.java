@@ -398,17 +398,35 @@ public class GreenqCommandService {
         review.setReviewAt(now);
         review.setReviewContent(str(req, "reviewContent"));
         review.setCreatedAt(now);
-        String nextStatus = def(str(req, "reviewStatusAfter"), "REVIEWED").trim().toUpperCase();
-        if (!"REVIEWED".equals(nextStatus) && !"REFLECTED".equals(nextStatus)) {
-            nextStatus = "REVIEWED";
-        }
+        String reportIncludeYn = "Y".equalsIgnoreCase(str(req, "reportIncludeYn")) ? "Y" : "N";
+        String nextStatus = "Y".equals(reportIncludeYn) ? "REFLECTED" : "REVIEWED";
         nc.setQualityNcStatus(nextStatus);
-        if ("REFLECTED".equals(nextStatus)) {
-            em.createNativeQuery("update quality_evaluation set report_reflected_yn = 'Y' where quality_eval_id = :qualityEvalId")
-                    .setParameter("qualityEvalId", nc.getQualityEvalId())
-                    .executeUpdate();
-        }
-        return qualityReviewLogRepository.save(review);
+        nc.setReportIncludeYn(reportIncludeYn);
+        QualityReviewLog saved = qualityReviewLogRepository.save(review);
+        syncQualityEvaluationReportReflectedYn(nc.getQualityEvalId());
+        return saved;
+    }
+
+    private void syncQualityEvaluationReportReflectedYn(Long qualityEvalId) {
+        if (qualityEvalId == null) return;
+        Object includedCount = em.createNativeQuery("""
+                        select count(*)
+                        from quality_nonconformity
+                        where quality_eval_id = :qualityEvalId
+                          and coalesce(delete_yn, 'N') <> 'Y'
+                          and coalesce(report_include_yn, 'N') = 'Y'
+                        """)
+                .setParameter("qualityEvalId", qualityEvalId)
+                .getSingleResult();
+        String reflectedYn = integerValue(includedCount) > 0 ? "Y" : "N";
+        em.createNativeQuery("""
+                        update quality_evaluation
+                        set report_reflected_yn = :reflectedYn
+                        where quality_eval_id = :qualityEvalId
+                        """)
+                .setParameter("reflectedYn", reflectedYn)
+                .setParameter("qualityEvalId", qualityEvalId)
+                .executeUpdate();
     }
 
     public GrowthMeasurement saveMeasurement(Map<String, Object> req) {

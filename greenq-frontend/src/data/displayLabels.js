@@ -19,9 +19,9 @@ export const actionStatusLabels = {
 };
 
 export const qualityNcStatusLabels = {
-  RECORDED: "기록됨",
+  RECORDED: "검토대기",
   REVIEWED: "검토완료",
-  REFLECTED: "리포트 반영",
+  REFLECTED: "리포트 반영 대상",
 };
 
 export const alertStatusLabels = {

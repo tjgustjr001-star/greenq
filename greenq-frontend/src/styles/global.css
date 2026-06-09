@@ -942,6 +942,32 @@ input:focus, select:focus, textarea:focus {
   accent-color: var(--green);
 }
 
+.checkbox-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8fbf9;
+  color: #1d2a22;
+}
+
+.checkbox-card input {
+  margin-top: 3px;
+}
+
+.checkbox-card span {
+  display: grid;
+  gap: 4px;
+}
+
+.checkbox-card small {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .mini-input {
   max-width: 96px;
   min-height: 34px;
@@ -3793,6 +3819,16 @@ button:disabled {
 .data-table col.col-scope { width: 9%; }
 .data-table col.col-target { width: 16%; }
 .data-table col.col-period { width: 18%; }
+
+.report-target-quality-panel .panel-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.report-target-quality-table td {
+  vertical-align: middle;
+}
 
 .issue-alert-table col.col-content { width: 34%; }
 .issue-alert-table col.col-title { width: 26%; }
