@@ -17,6 +17,7 @@ const ADMIN_ONLY_PREFIXES = [
   "/crops",
   "/zones",
   "/batches",
+  "/simulation",
   "/reports",
   "/users",
   "/deleted-data",

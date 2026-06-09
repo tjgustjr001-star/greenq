@@ -3904,3 +3904,334 @@ button:disabled {
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
+
+.simulation-page {
+  min-width: 0;
+}
+
+.simulation-summary-grid {
+  margin-bottom: 18px;
+}
+
+.simulation-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 18px;
+  align-items: start;
+}
+
+.simulation-stage {
+  padding: 18px;
+}
+
+.simulation-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.simulation-zone-card {
+  border: 1px solid rgba(31, 47, 40, 0.08);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf8 100%);
+  padding: 18px;
+  min-width: 0;
+  box-shadow: 0 12px 28px rgba(25, 43, 31, 0.05);
+}
+
+.simulation-zone-card.caution {
+  background: linear-gradient(180deg, #ffffff 0%, #fff9ec 100%);
+}
+
+.simulation-zone-card.fail {
+  background: linear-gradient(180deg, #ffffff 0%, #fff2ef 100%);
+}
+
+.simulation-zone-card.missing {
+  background: linear-gradient(180deg, #ffffff 0%, #f4f7f5 100%);
+  opacity: 0.78;
+}
+
+.simulation-zone-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.simulation-zone-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.simulation-zone-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.simulation-plant-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  margin: 16px 0;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(69, 132, 86, 0.08), rgba(255, 255, 255, 0)),
+    repeating-linear-gradient(90deg, rgba(31, 47, 40, 0.04), rgba(31, 47, 40, 0.04) 1px, transparent 1px, transparent 54px);
+}
+
+.simulation-plant {
+  position: relative;
+  width: 112px;
+  height: 116px;
+}
+
+.simulation-leaf,
+.simulation-stem,
+.simulation-pot {
+  position: absolute;
+  display: block;
+}
+
+.simulation-leaf {
+  width: 52px;
+  height: 34px;
+  border-radius: 50% 50% 44% 44%;
+  background: #4f9b63;
+  box-shadow: inset 0 -8px 12px rgba(23, 75, 41, 0.16), 0 8px 18px rgba(35, 89, 52, 0.14);
+}
+
+.simulation-leaf-left {
+  left: 18px;
+  top: 28px;
+  transform: rotate(-34deg);
+}
+
+.simulation-leaf-right {
+  right: 18px;
+  top: 28px;
+  transform: rotate(34deg);
+}
+
+.simulation-leaf-front {
+  left: 36px;
+  top: 46px;
+  transform: rotate(0deg);
+  background: #64ad72;
+}
+
+.simulation-stem {
+  left: 54px;
+  top: 54px;
+  width: 8px;
+  height: 48px;
+  border-radius: 999px;
+  background: #3e7d4c;
+}
+
+.simulation-pot {
+  left: 30px;
+  bottom: 4px;
+  width: 56px;
+  height: 26px;
+  border-radius: 8px 8px 16px 16px;
+  background: #8c6d4d;
+}
+
+.simulation-plant.caution .simulation-leaf {
+  background: #d4b75b;
+  transform-origin: bottom center;
+}
+
+.simulation-plant.caution .simulation-leaf-left {
+  transform: rotate(-48deg) translateY(6px);
+}
+
+.simulation-plant.caution .simulation-leaf-right {
+  transform: rotate(48deg) translateY(6px);
+}
+
+.simulation-plant.fail .simulation-leaf {
+  background: #b76556;
+  box-shadow: inset 0 -8px 12px rgba(93, 36, 24, 0.18);
+}
+
+.simulation-plant.fail .simulation-leaf-left {
+  transform: rotate(-66deg) translate(0, 14px);
+}
+
+.simulation-plant.fail .simulation-leaf-right {
+  transform: rotate(66deg) translate(0, 14px);
+}
+
+.simulation-plant.fail .simulation-leaf-front {
+  transform: translateY(16px) rotate(10deg);
+}
+
+.simulation-plant.missing {
+  opacity: 0.38;
+  filter: grayscale(0.8);
+}
+
+.simulation-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.simulation-metric {
+  border: 1px solid rgba(31, 47, 40, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 11px 12px;
+  min-width: 0;
+}
+
+.simulation-metric.caution {
+  border-color: rgba(212, 183, 91, 0.45);
+  background: #fffaf0;
+}
+
+.simulation-metric.fail {
+  border-color: rgba(183, 101, 86, 0.42);
+  background: #fff5f2;
+}
+
+.simulation-metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.simulation-metric strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.simulation-sparkline {
+  width: 100%;
+  height: 34px;
+  margin-top: 6px;
+  display: block;
+  overflow: visible;
+}
+
+.simulation-sparkline line {
+  stroke: rgba(31, 47, 40, 0.12);
+  stroke-width: 1;
+}
+
+.simulation-sparkline polyline {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.simulation-sparkline-empty {
+  height: 34px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.simulation-card-save {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.simulation-control-panel {
+  padding: 18px;
+  position: sticky;
+  top: 104px;
+}
+
+.simulation-control-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.simulation-control-actions button {
+  justify-content: center;
+}
+
+.simulation-log-panel {
+  margin-top: 18px;
+}
+
+.simulation-log-list {
+  display: grid;
+}
+
+.simulation-log-row {
+  display: grid;
+  grid-template-columns: 54px 90px 70px 90px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 13px 18px;
+  border-top: 1px solid rgba(31, 47, 40, 0.06);
+}
+
+.simulation-log-row span,
+.simulation-log-row em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.simulation-log-row strong {
+  font-size: 13px;
+}
+
+.simulation-log-row p {
+  margin: 0;
+  color: #35443a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1280px) {
+  .simulation-stage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1020px) {
+  .simulation-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .simulation-control-panel {
+    position: static;
+  }
+
+  .simulation-control-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .simulation-stage,
+  .simulation-zone-card,
+  .simulation-control-panel {
+    padding: 14px;
+  }
+
+  .simulation-metric-grid,
+  .simulation-control-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .simulation-log-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+}

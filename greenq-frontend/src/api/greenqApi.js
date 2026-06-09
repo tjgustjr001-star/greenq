@@ -38,6 +38,7 @@ export const greenqApi = {
   createEnvironmentLog: (data) => apiClient.post("/environment-logs", data),
   deleteEnvironmentLog: (id) => apiClient.delete(`/environment-logs/${id}`),
   runEnvironmentSimulator: (data) => apiClient.post("/environment-simulator/run", data),
+  catchUpEnvironmentSimulator: () => apiClient.post("/environment-simulator/catch-up", {}),
 
   issues: () => apiClient.get("/issues"),
   envAlerts: (params) => apiClient.get("/env-alerts", params),

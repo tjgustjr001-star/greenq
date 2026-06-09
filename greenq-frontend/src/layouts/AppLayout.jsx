@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, BarChart3, Bell, ClipboardCheck, Home, Layers3, Leaf, LogOut, Map, Trash2, Users } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Bell, ClipboardCheck, FlaskConical, Home, Layers3, Leaf, LogOut, Map, Trash2, Users } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { greenqApi } from "../api/greenqApi.js";
@@ -11,6 +11,7 @@ const menus = [
   { label: "작물/기준 관리", path: "/crops", match: "/crops", icon: Leaf, roles: ["ADMIN"] },
   { label: "구역/배치 관리", path: "/zones", match: "/zones", icon: Map, roles: ["ADMIN"] },
   { label: "환경 모니터링", path: "/environment", match: "/environment", icon: Activity, roles: ["ADMIN", "WORKER"] },
+  { label: "환경 시뮬레이션", path: "/simulation", match: "/simulation", icon: FlaskConical, roles: ["ADMIN"] },
   { label: "실측/품질 관리", path: "/quality", match: "/quality", icon: ClipboardCheck, roles: ["ADMIN", "WORKER"] },
   { label: "부적합 이력", path: "/issues", match: "/issues", icon: AlertTriangle, roles: ["ADMIN", "WORKER"] },
   { label: "리포트", path: "/reports", match: "/reports", icon: BarChart3, roles: ["ADMIN"] },

@@ -19,6 +19,7 @@ import BatchDetailPage from "../pages/batches/BatchDetailPage.jsx";
 
 import EnvironmentPage from "../pages/environment/EnvironmentPage.jsx";
 import EnvironmentLogDetailPage from "../pages/environment/EnvironmentLogDetailPage.jsx";
+import SimulationPage from "../pages/simulation/SimulationPage.jsx";
 
 import QualityPage from "../pages/quality/QualityPage.jsx";
 import QualityEntryPage from "../pages/quality/QualityEntryPage.jsx";
@@ -69,6 +70,7 @@ export default function AppRouter() {
 
           <Route path="/environment" element={<EnvironmentPage />} />
           <Route path="/environment/logs/:envLogId" element={<EnvironmentLogDetailPage />} />
+          <Route path="/simulation" element={<SimulationPage />} />
 
           <Route path="/quality" element={<QualityPage />} />
           <Route path="/quality/new" element={<QualityEntryPage />} />
