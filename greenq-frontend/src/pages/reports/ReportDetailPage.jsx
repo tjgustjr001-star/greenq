@@ -267,11 +267,13 @@ function StatusDistributionPanel({ title, rows }) {
           </div>
           <div className="report-status-list">
             {statusRows.map((row) => (
-              <div key={row.status}>
-                <i className={`report-status-dot ${row.status.toLowerCase()}`} />
-                <span>{row.label}</span>
-                <strong>{row.count}건</strong>
-                <small>{formatNumber(row.ratio)}%</small>
+              <div key={row.status} className="report-status-row">
+                <span className="report-status-name">
+                  <i className={`report-status-dot ${row.status.toLowerCase()}`} />
+                  <span>{row.label}</span>
+                </span>
+                <strong className="report-status-count">{row.count}건</strong>
+                <small className="report-status-rate">{formatNumber(row.ratio)}%</small>
               </div>
             ))}
           </div>
@@ -285,7 +287,7 @@ function TopNonconformityPanel({ title, rows }) {
   const items = asList(rows);
   const maxCount = Math.max(...items.map((item) => Number(item.totalCount ?? 0)), 1);
   return (
-    <div className="panel report-visual-panel">
+    <div className="panel report-visual-panel report-top-panel">
       <div className="panel-head compact">
         <h3>{title}</h3>
         <p>주의/경고 발생 횟수 기준 TOP 항목</p>
@@ -388,7 +390,7 @@ export default function ReportDetailPage() {
   if (error || !report) return <EmptyState title="리포트를 찾을 수 없습니다." description={error || "잘못된 리포트 ID입니다."} action={<button className="primary-button" onClick={() => navigate("/reports")}>리포트 목록으로</button>} />;
 
   return (
-    <div className="page">
+    <div className="page report-detail-page">
       <PageHeader
         eyebrow="Report Detail"
         title={report.reportTitle}
@@ -405,7 +407,7 @@ export default function ReportDetailPage() {
         <StatusBadge value={report.reportStatus} />
       </div>
 
-      <section className="report-kpi-grid">
+      <section className="report-kpi-grid report-section">
         <div className="report-kpi-card"><span>환경 로그</span><strong>{condition?.envTotal ?? "-"}</strong><small>정상 {condition?.envNormal ?? "-"} / 주의 {condition?.envCaution ?? "-"} / 경고 {condition?.envFail ?? "-"}</small></div>
         <div className="report-kpi-card"><span>품질 실측</span><strong>{condition?.qualityTotal ?? "-"}</strong><small>정상 {condition?.qualityNormal ?? "-"} / 주의 {condition?.qualityCaution ?? "-"} / 경고 {condition?.qualityFail ?? "-"}</small></div>
         <div className="report-kpi-card"><span>환경 부적합</span><strong>{condition?.envNcTotal ?? "-"}</strong><small>조치 이력 {condition?.envActionTotal ?? "-"}건</small></div>
@@ -414,14 +416,14 @@ export default function ReportDetailPage() {
 
       <ReportTrendPanel rows={report.environmentTrend} />
 
-      <section className="content-grid two report-visual-grid">
+      <section className="content-grid two report-visual-grid report-section">
         <StatusDistributionPanel title="환경 상태 분포" rows={report.envStatusDistribution} />
         <StatusDistributionPanel title="품질 상태 분포" rows={report.qualityStatusDistribution} />
         <TopNonconformityPanel title="환경 부적합 TOP 항목" rows={report.envTopNonconformityItems} />
         <TopNonconformityPanel title="품질 부적합 TOP 항목" rows={report.qualityTopNonconformityItems} />
       </section>
 
-      <section className="content-grid two report-text-summary-grid">
+      <section className="content-grid two report-text-summary-grid report-section">
         <SummaryPanel title="환경 요약">{report.envSummary}</SummaryPanel>
         <SummaryPanel title="품질 요약">{report.qualitySummary}</SummaryPanel>
         <SummaryPanel title="환경 부적합 요약">{report.envNcSummary}</SummaryPanel>
@@ -435,7 +437,7 @@ export default function ReportDetailPage() {
         <p>{report.guideSummary || "-"}</p>
       </div>
 
-      <div className="panel">
+      <div className="panel report-snapshot-panel">
         <div className="panel-head"><h3>발급 조건 스냅샷</h3><p>리포트 발급 당시 필터와 주요 집계값입니다.</p></div>
         <div className="report-condition-grid">
           <div><span>리포트 유형</span><strong>{labelOf(condition?.reportType || report.reportType)}</strong></div>

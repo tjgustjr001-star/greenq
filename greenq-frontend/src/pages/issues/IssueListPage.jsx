@@ -4,6 +4,7 @@ import { greenqApi } from "../../api/greenqApi.js";
 import ActionMenu from "../../components/ActionMenu.jsx";
 import PageHeader from "../../components/PageHeader.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
+import { issueStatusLabel, issueStatusShortLabel } from "../../data/displayLabels.js";
 import { asArray, useApiData } from "../../hooks/useApiData.js";
 import { getCurrentUser } from "../../utils/auth.js";
 
@@ -13,6 +14,30 @@ function normalizeIssueType(value) {
 
 function getIssueRawId(issue) {
   return issue.rawId || String(issue.issueId || "").replace(/^(ENV|QLT)-/i, "");
+}
+
+function renderIssueStatus(issue) {
+  if (issue.issueType !== "quality") return <StatusBadge value={issue.status} />;
+  const status = String(issue.status || "").toUpperCase();
+  return (
+    <StatusBadge
+      value={status}
+      label={issueStatusShortLabel("quality", status)}
+      title={issueStatusLabel("quality", status)}
+      className={`quality-status-badge quality-status-${status.toLowerCase()}`}
+    />
+  );
+}
+
+function renderAlertStatus(issue) {
+  if (issue.issueType !== "env") return <span className="issue-alert-muted">-</span>;
+  const unread = Number(issue.unreadAlertCount ?? issue.alertUnreadCount ?? 0);
+  const active = Number(issue.activeAlertCount ?? issue.alertActiveCount ?? 0);
+  const closed = Number(issue.closedAlertCount ?? issue.alertClosedCount ?? 0);
+  if (unread > 0) return <span className="issue-alert-chip unread">미확인 {unread}</span>;
+  if (active > 0) return <span className="issue-alert-chip read">읽음</span>;
+  if (closed > 0) return <span className="issue-alert-chip closed">닫힘</span>;
+  return <span className="issue-alert-muted">없음</span>;
 }
 
 export default function IssueListPage() {
@@ -118,7 +143,7 @@ export default function IssueListPage() {
         </button>
       </div>
 
-      <div className="panel table-panel">
+      <div className="panel table-panel issue-list-panel">
         <table className="data-table issue-list-table">
           <colgroup>
             <col className="col-date" />
@@ -129,8 +154,8 @@ export default function IssueListPage() {
             <col className="col-value" />
             <col className="col-standard" />
             <col className="col-status" />
-            <col className="col-status" />
-            <col className="col-small" />
+            <col className="col-issue-state" />
+            <col className="col-alert" />
             <col className="col-action" />
           </colgroup>
 
@@ -182,15 +207,11 @@ export default function IssueListPage() {
                 </td>
 
                 <td>
-                  <StatusBadge value={issue.status} />
+                  {renderIssueStatus(issue)}
                 </td>
 
                 <td>
-                  {issue.issueType === "env"
-                    ? `${issue.unreadAlertCount || 0}/${
-                        issue.activeAlertCount || 0
-                      }`
-                    : "-"}
+                  {renderAlertStatus(issue)}
                 </td>
 
                 <td>

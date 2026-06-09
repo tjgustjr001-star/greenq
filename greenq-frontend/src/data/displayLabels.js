@@ -24,6 +24,12 @@ export const qualityNcStatusLabels = {
   REFLECTED: "리포트 반영 대상",
 };
 
+export const qualityNcStatusShortLabels = {
+  RECORDED: "검토대기",
+  REVIEWED: "검토완료",
+  REFLECTED: "반영대상",
+};
+
 export const alertStatusLabels = {
   UNREAD: "읽지 않음",
   READ: "읽음",
@@ -101,6 +107,13 @@ export function issueStatusLabel(issueType, status) {
   const normalizedType = String(issueType || "").toLowerCase();
   if (normalizedType === "quality") return qualityNcStatusLabels[status] || labelOf(status);
   return actionStatusLabels[status] || labelOf(status);
+}
+
+export function issueStatusShortLabel(issueType, status) {
+  if (status === null || status === undefined || status === "") return "-";
+  const normalizedType = String(issueType || "").toLowerCase();
+  if (normalizedType === "quality") return qualityNcStatusShortLabels[status] || issueStatusLabel(issueType, status);
+  return issueStatusLabel(issueType, status);
 }
 
 export function alertStatusLabel(status) {

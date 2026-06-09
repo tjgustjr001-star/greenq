@@ -58,8 +58,8 @@ export default function DeletedDataPage() {
       {!isAdmin ? null : rows.length === 0 ? (
         <EmptyState title="삭제 데이터가 없습니다." description="현재 임시 삭제된 데이터가 없습니다." />
       ) : (
-        <div className="panel">
-          <table>
+        <div className="panel deleted-table-panel">
+          <table className="deleted-table">
             <thead>
               <tr><th>구분</th><th>데이터</th><th>삭제일시</th><th>관리</th></tr>
             </thead>
@@ -67,12 +67,12 @@ export default function DeletedDataPage() {
               {rows.map((item) => (
                 <tr key={`${item.entityName}-${item.idValue}`}>
                   <td><strong>{item.entityLabel}</strong></td>
-                  <td>{item.displayName}</td>
+                  <td><span className="deleted-cell-text">{item.displayName}</span></td>
                   <td>{item.deletedAt || "-"}</td>
                   <td>
-                    <div className="inline-actions center">
-                      <button className="small-button" onClick={() => restore(item)}>복원</button>
-                      <button className="small-button danger" onClick={() => setRemoveTarget(item)}>영구 삭제</button>
+                    <div className="deleted-action-group">
+                      <button className="deleted-action-btn restore" onClick={() => restore(item)}>복원</button>
+                      <button className="deleted-action-btn remove" onClick={() => setRemoveTarget(item)}>영구 삭제</button>
                     </div>
                   </td>
                 </tr>

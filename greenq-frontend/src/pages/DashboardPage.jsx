@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { AlertTriangle, Bell, CheckCircle, FileText } from "lucide-react";
 import PageHeader from "../components/PageHeader.jsx";
 import StatCard from "../components/StatCard.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
@@ -31,6 +32,28 @@ export default function DashboardPage() {
   const envOpenIssues = data?.envOpenIssueCount ?? 0;
   const qualityRecordedIssues = data?.qualityRecordedIssueCount ?? 0;
   const issueHint = `환경 미해결 ${envOpenIssues}건 · 품질 검토대기 ${qualityRecordedIssues}건`;
+  const hasUnreadEnvAlerts = unreadAlerts > 0;
+  const hasPendingIssues = openIssues > 0;
+  const actionCards = [
+    hasUnreadEnvAlerts && {
+      key: "alerts",
+      badge: "확인 필요",
+      title: "환경 알림 확인",
+      desc: `미확인 환경 알림 ${unreadAlerts}건이 있습니다.`,
+      icon: Bell,
+      danger: true,
+      onClick: () => navigate("/issues?type=env"),
+    },
+    hasPendingIssues && {
+      key: "issues",
+      badge: "처리 필요",
+      title: "처리 필요 부적합",
+      desc: issueHint,
+      icon: AlertTriangle,
+      danger: true,
+      onClick: () => navigate("/issues"),
+    },
+  ].filter(Boolean);
   const latestEnvValue = latestEnv.envStatus ? labelOf(latestEnv.envStatus) : "없음";
   const latestQualityValue = latestQuality.qualityStatus ? labelOf(latestQuality.qualityStatus) : "없음";
 
@@ -49,23 +72,35 @@ export default function DashboardPage() {
         <StatCard label="등록 작물" value={data?.cropCount ?? 0}  />
       </section>
 
-      <section className="dashboard-priority-grid">
-        <button type="button" className={unreadAlerts > 0 ? "dashboard-priority-card danger" : "dashboard-priority-card"} onClick={() => navigate("/issues?type=env")}>
-          <span>1순위</span>
-          <strong>환경 알림 확인</strong>
-          <p>{unreadAlerts > 0 ? `${unreadAlerts}건의 미확인 알림이 있습니다.` : "미확인 환경 알림이 없습니다."}</p>
-        </button>
-        <button type="button" className={openIssues > 0 ? "dashboard-priority-card danger" : "dashboard-priority-card"} onClick={() => navigate("/issues")}>
-          <span>2순위</span>
-          <strong>처리 필요 부적합</strong>
-          <p>{openIssues > 0 ? `${openIssues}건의 처리 필요 부적합이 있습니다. ${issueHint}` : "처리 필요 부적합이 없습니다."}</p>
-        </button>
-        <button type="button" className="dashboard-priority-card" onClick={() => navigate("/reports")}>
-          <span>마감</span>
-          <strong>리포트 발급</strong>
-          <p>환경·품질·부적합 데이터를 기준으로 운영 리포트를 확인합니다.</p>
-        </button>
-      </section>
+      {actionCards.length > 0 ? (
+        <section className="dashboard-priority-grid">
+          {actionCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <button key={card.key} type="button" className={card.danger ? "dashboard-priority-card danger" : "dashboard-priority-card"} onClick={card.onClick}>
+                <span className="dashboard-priority-icon"><Icon size={18} /></span>
+                <div>
+                  <em>{card.badge}</em>
+                  <strong>{card.title}</strong>
+                  <p>{card.desc}</p>
+                </div>
+              </button>
+            );
+          })}
+        </section>
+      ) : (
+        <section className="dashboard-action-banner">
+          <div className="dashboard-action-copy">
+            <span className="dashboard-action-kicker"><CheckCircle size={16} />운영 상태</span>
+            <h3>현재 처리할 주요 항목이 없습니다</h3>
+            <p>미확인 환경 알림과 품질 검토대기 항목이 없습니다. 최근 환경 로그와 리포트를 확인해 운영 상태를 점검하세요.</p>
+          </div>
+          <div className="dashboard-action-buttons">
+            <button className="secondary-button" onClick={() => navigate("/environment")}>환경 모니터링</button>
+            <button className="primary-button" onClick={() => navigate("/reports")}><FileText size={16} />리포트 보기</button>
+          </div>
+        </section>
+      )}
 
       <section className="content-grid two">
         <div className="panel">
