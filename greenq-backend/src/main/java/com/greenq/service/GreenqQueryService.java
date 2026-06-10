@@ -456,7 +456,7 @@ public class GreenqQueryService {
         String sql = """
                 select nc.quality_nc_id, nc.occurred_at, nc.quality_nc_status, nc.severity,
                        nc.item_code, nc.item_name, nc.measured_value, nc.standard_min, nc.standard_max,
-                       nc.deviation_rate, nc.recommended_next_action, b.batch_name, z.zone_name,
+                       nc.deviation_rate, nc.recommended_next_action, b.batch_name, z.zone_name, nc.batch_id,
                        nc.quality_eval_id, nc.measurement_id, nc.quality_eval_item_id, nc.crop_id,
                        qei.measured_text_value,
                        coalesce(nc.report_include_yn, 'N') as report_include_yn,
@@ -478,7 +478,7 @@ public class GreenqQueryService {
                   and coalesce(z.delete_yn, 'N') <> 'Y'
                 group by nc.quality_nc_id, nc.occurred_at, nc.quality_nc_status, nc.severity,
                          nc.item_code, nc.item_name, nc.measured_value, nc.standard_min, nc.standard_max,
-                         nc.deviation_rate, nc.recommended_next_action, b.batch_name, z.zone_name,
+                         nc.deviation_rate, nc.recommended_next_action, b.batch_name, z.zone_name, nc.batch_id,
                          nc.quality_eval_id, nc.measurement_id, nc.quality_eval_item_id, nc.crop_id,
                          qei.measured_text_value, nc.report_include_yn
                 """;
@@ -488,9 +488,9 @@ public class GreenqQueryService {
                 "resolvedAt", null, "status", r[2], "qualityNcStatus", r[2], "severity", r[3], "itemCode", r[4], "itemName", r[5],
                 "measuredValue", num(r[6]), "standardRange", range(r[7], r[8]), "standardMin", num(r[7]), "standardMax", num(r[8]),
                 "deviationRate", num(r[9]), "guide", r[10], "guideMessage", r[10], "batchName", r[11], "zoneName", r[12],
-                "qualityEvalId", r[13], "measurementId", r[14], "qualityEvalItemId", r[15], "cropId", r[16],
-                "measuredTextValue", r[17], "measuredValueDisplay", r[6] == null ? r[17] : num(r[6]),
-                "reportIncludeYn", r[18], "reportReflectedYn", r[19], "reviewCount", r[20], "latestReviewAt", dtObj(r[21]), "actionRequired", false
+                "batchId", r[13], "qualityEvalId", r[14], "measurementId", r[15], "qualityEvalItemId", r[16], "cropId", r[17],
+                "measuredTextValue", r[18], "measuredValueDisplay", r[6] == null ? r[18] : num(r[6]),
+                "reportIncludeYn", r[19], "reportReflectedYn", r[20], "reviewCount", r[21], "latestReviewAt", dtObj(r[22]), "actionRequired", false
         )).toList();
     }
 
@@ -505,7 +505,11 @@ public class GreenqQueryService {
     }
 
     public List<Map<String, Object>> measurements() {
-        String sql = """
+        return measurements(null);
+    }
+
+    public List<Map<String, Object>> measurements(Long batchId) {
+        StringBuilder sql = new StringBuilder("""
                 select gm.measurement_id, gm.measured_at, gm.batch_id, b.batch_name, z.zone_id, z.zone_name,
                        c.crop_id, c.crop_name, gm.sample_count, gm.plant_height, gm.leaf_width, gm.leaf_length,
                        gm.fresh_weight, gm.leaf_color, gm.growth_stage, gm.special_note, gm.quality_status,
@@ -526,9 +530,12 @@ public class GreenqQueryService {
                   and coalesce(b.delete_yn, 'N') <> 'Y'
                   and coalesce(c.delete_yn, 'N') <> 'Y'
                   and coalesce(z.delete_yn, 'N') <> 'Y'
-                order by gm.measured_at desc, gm.measurement_id desc
-                """;
-        @SuppressWarnings("unchecked") List<Object[]> rows = em.createNativeQuery(sql).getResultList();
+                """);
+        if (batchId != null) sql.append(" and gm.batch_id = :batchId ");
+        sql.append(" order by gm.measured_at desc, gm.measurement_id desc ");
+        var query = em.createNativeQuery(sql.toString());
+        if (batchId != null) query.setParameter("batchId", batchId);
+        @SuppressWarnings("unchecked") List<Object[]> rows = query.getResultList();
         return rows.stream().map(this::measurementRowMap).toList();
     }
 

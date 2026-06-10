@@ -41,6 +41,7 @@ export default function AppLayout() {
   const role = user.role || user.roleCode || "WORKER";
   const roleLabel = labelOf(role);
   const userName = user.name || user.userName || "사용자";
+  const isQrEntryRoute = location.pathname === "/quality/new" && new URLSearchParams(location.search).get("fromQr") === "Y";
   const showRoleChip = userName !== roleLabel;
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
@@ -116,7 +117,7 @@ export default function AppLayout() {
   const visibleMenus = menus.filter((menu) => (menu.roles || []).includes(role));
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isQrEntryRoute ? "qr-entry-shell" : ""}`}>
       <aside className="sidebar">
         <button className="brand" type="button" onClick={() => navigate(defaultPathForRole(role))}>
           <div className="brand-mark">GQ</div><div><h1>GreenQ</h1><p>품질관리 시스템</p></div>

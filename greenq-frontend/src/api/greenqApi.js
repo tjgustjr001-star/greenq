@@ -54,7 +54,7 @@ export const greenqApi = {
   createQualityIssueReview: (qualityNcId, data) => apiClient.post(`/issues/quality/${qualityNcId}/reviews`, data),
   deleteIssue: (issueType, rawId) => apiClient.delete(`/issues/${issueType}/${rawId}`),
 
-  measurements: () => apiClient.get("/measurements"),
+  measurements: (params) => apiClient.get("/measurements", params),
   measurement: (id) => apiClient.get(`/measurements/${id}`),
   createMeasurement: (data) => apiClient.post("/measurements", data),
   deleteMeasurement: (id) => apiClient.delete(`/measurements/${id}`),

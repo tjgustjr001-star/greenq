@@ -136,8 +136,8 @@ public class GreenqReadController {
     }
 
     @GetMapping("/measurements")
-    public ApiResponse<List<Map<String, Object>>> measurements() {
-        return ApiResponse.ok(service.measurements());
+    public ApiResponse<List<Map<String, Object>>> measurements(@RequestParam(required = false) Long batchId) {
+        return ApiResponse.ok(service.measurements(batchId));
     }
 
     @GetMapping("/measurements/{measurementId}")

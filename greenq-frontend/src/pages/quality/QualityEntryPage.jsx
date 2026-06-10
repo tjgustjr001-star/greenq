@@ -150,21 +150,21 @@ export default function QualityEntryPage() {
   if (loading) return <div className="panel"><p className="muted-text">배치 정보를 불러오는 중입니다...</p></div>;
 
   return (
-    <div className="page quality-entry-page">
+    <div className={`page quality-entry-page ${fromQr ? "qr-entry-mode" : ""}`}>
       <PageHeader
         eyebrow="Quality Entry"
         title="실측 데이터 입력"
-        description="작업자가 배치별 샘플을 입력하면 평균값을 계산하고 품질 평가를 자동 실행합니다."
-        actions={<><button className="secondary-button" onClick={() => navigate("/quality")}>목록으로</button><button className="primary-button" onClick={saveMeasurement} disabled={saving || !form.batchId}><Save size={16} />{saving ? "저장 중" : "저장 및 평가"}</button></>}
+        description={fromQr ? "QR로 선택된 배치의 샘플 실측값을 입력합니다." : "작업자가 배치별 샘플을 입력하면 평균값을 계산하고 품질 평가를 자동 실행합니다."}
+        actions={<><button type="button" className="secondary-button" onClick={() => navigate("/quality")}>목록으로</button><button type="button" className="primary-button" onClick={saveMeasurement} disabled={saving || !form.batchId}><Save size={16} />{saving ? "저장 중" : "저장 및 평가"}</button></>}
       />
       {error && <div className="notice-box">{error}</div>}
 
-      {fromQr && selectedBatch && <div className="notice-box qr-entry-notice">QR로 선택된 배치입니다. 현장 확인 후 샘플 실측값을 입력하세요. <strong>{batchNameWithZone(selectedBatch)}</strong></div>}
+      {fromQr && selectedBatch && <div className="notice-box qr-entry-notice"><span>QR로 선택된 배치입니다.</span><strong>{batchNameWithZone(selectedBatch)}</strong></div>}
       {!fromQr && initialBatchId && selectedBatch && <div className="notice-box qr-entry-notice">같은 배치로 새 실측을 입력합니다. <strong>{batchNameWithZone(selectedBatch)}</strong></div>}
 
       <div className="panel quality-entry-panel">
         <div className="quality-entry-top">
-          <label>배치 선택<select value={form.batchId} onChange={(e) => setForm((p) => ({ ...p, batchId: e.target.value }))}>{batches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batchDisplayLabel(batch)}</option>)}</select>{fromQr && <span className="field-hint">QR 스캔으로 자동 선택되었습니다. 필요 시 다른 배치로 변경할 수 있습니다.</span>}</label>
+          <label>배치 선택<select value={form.batchId} onChange={(e) => setForm((p) => ({ ...p, batchId: e.target.value }))}>{batches.map((batch) => <option key={batch.batchId} value={batch.batchId}>{batchDisplayLabel(batch)}</option>)}</select>{fromQr && <span className="field-hint">QR 스캔으로 자동 선택되었습니다.</span>}</label>
           <label>측정일시<input type="datetime-local" value={form.measuredAt} onChange={(e) => setForm((p) => ({ ...p, measuredAt: e.target.value }))} /></label>
           <div className="quality-target-box"><span>선택 배치</span><strong>{selectedBatch ? batchNameWithZone(selectedBatch) : "배치를 선택하세요"}</strong><p>{selectedBatch?.cropName || "-"}</p></div>
         </div>
@@ -174,11 +174,11 @@ export default function QualityEntryPage() {
           {numericKeys.map((key) => <div key={key}><span>{numericLabels[key]}</span><strong>{summary[key] ?? "-"}</strong></div>)}
         </div>
 
-        <div className="panel-head no-border"><div><h3>샘플별 실측값</h3><p className="panel-desc">샘플별 측정값을 입력하면 평균값과 품질 판정에 반영됩니다.</p></div><button className="secondary-button" onClick={addSample}><Plus size={15} />샘플 추가</button></div>
+        <div className="panel-head no-border sample-section-head"><div><h3>샘플별 실측값</h3><p className="panel-desc">샘플별 측정값을 입력하면 평균값과 품질 판정에 반영됩니다.</p></div><button type="button" className="secondary-button sample-add-button" onClick={addSample}><Plus size={15} />샘플 추가</button></div>
         <div className="sample-card-list enhanced">
           {form.samples.map((sample, index) => (
             <article className="sample-card enhanced" key={sample.sampleNo}>
-              <div className="sample-card-head"><div><strong>샘플 {index + 1}</strong><p>개체별 원시값</p></div><button className="icon-danger-button" onClick={() => removeSample(index)} disabled={form.samples.length <= 1}><Trash2 size={15} /></button></div>
+              <div className="sample-card-head"><div><strong>샘플 {index + 1}</strong><p>개체별 원시값</p></div><button type="button" className="icon-danger-button" onClick={() => removeSample(index)} disabled={form.samples.length <= 1} aria-label={`샘플 ${index + 1} 삭제`}><Trash2 size={15} /></button></div>
               <div className="sample-grid enhanced">
                 {numericKeys.map((key) => <label key={key}>{numericLabels[key]}<input inputMode="decimal" value={sample[key]} onChange={(e) => updateSample(index, key, e.target.value)} placeholder={numericPlaceholders[key]} /></label>)}
                 <label>엽색<select value={sample.leafColor} onChange={(e) => updateSample(index, "leafColor", e.target.value)}><option value="">선택</option>{leafColorOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
@@ -188,6 +188,12 @@ export default function QualityEntryPage() {
             </article>
           ))}
         </div>
+      </div>
+      <div className="quality-mobile-action-bar" aria-label="실측 입력 빠른 작업">
+        <button type="button" className="secondary-button" onClick={() => navigate("/quality")}>목록으로</button>
+        <button type="button" className="primary-button" onClick={saveMeasurement} disabled={saving || !form.batchId}>
+          <Save size={16} />{saving ? "저장 중" : "저장 및 평가"}
+        </button>
       </div>
     </div>
   );
