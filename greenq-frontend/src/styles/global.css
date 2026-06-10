@@ -3331,6 +3331,14 @@ button:disabled {
   font-size: 13px;
 }
 
+.qr-localhost-warning {
+  margin: 8px 0 0;
+  max-width: 240px;
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .qr-info-card h3 {
   margin: 4px 0 14px;
 }
@@ -3378,6 +3386,24 @@ button:disabled {
   color: #1e3a8a;
   font-size: 12px;
   word-break: break-all;
+}
+
+.qr-detail-panel {
+  margin-top: 14px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 12px;
+}
+
+.qr-detail-panel summary {
+  color: #356648;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  list-style-position: inside;
+}
+
+.qr-detail-panel[open] summary {
+  margin-bottom: 8px;
 }
 
 .mono-text {
