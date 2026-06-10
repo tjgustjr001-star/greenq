@@ -37,6 +37,8 @@ export default function IssueDetailPage() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [actionContent, setActionContent] = useState("");
   const [actionStatusAfter, setActionStatusAfter] = useState("IN_PROGRESS");
+  const [actionSaving, setActionSaving] = useState(false);
+  const [actionError, setActionError] = useState("");
   const [reviewContent, setReviewContent] = useState("");
   const [reviewReportTarget, setReviewReportTarget] = useState(false);
 
@@ -56,6 +58,8 @@ export default function IssueDetailPage() {
   const resetActionForm = () => {
     setActionContent("");
     setActionStatusAfter("IN_PROGRESS");
+    setActionError("");
+    setActionSaving(false);
     setActionModalOpen(false);
   };
 
@@ -66,15 +70,27 @@ export default function IssueDetailPage() {
   };
 
   const saveAction = async () => {
-    if (!actionContent.trim()) return;
-    await greenqApi.createIssueAction(issueId, {
-      actionContent,
-      actionStatusAfter,
-      actionType: "CHECKED",
-      actionBy: currentUserId(user),
-    });
-    resetActionForm();
-    await reload();
+    const trimmedContent = actionContent.trim();
+    if (!trimmedContent) {
+      setActionError("조치 내용을 입력하세요.");
+      return;
+    }
+    setActionSaving(true);
+    setActionError("");
+    try {
+      await greenqApi.createIssueAction(issueId, {
+        actionContent: trimmedContent,
+        actionStatusAfter,
+        actionType: "CHECKED",
+        actionBy: currentUserId(user),
+      });
+      resetActionForm();
+      window.dispatchEvent(new CustomEvent("greenq:env-alerts-refresh"));
+      await reload();
+    } catch (err) {
+      setActionError(err?.message || "조치 이력 저장에 실패했습니다.");
+      setActionSaving(false);
+    }
   };
 
   const saveReview = async () => {
@@ -267,11 +283,12 @@ export default function IssueDetailPage() {
         title="환경 조치 메모 등록"
         description="환경 부적합 확인, 조치중, 조치완료 상태를 메모와 함께 기록합니다."
         onClose={resetActionForm}
-        footer={<><button className="secondary-button" onClick={resetActionForm}>취소</button><button className="primary-button" onClick={saveAction}>저장</button></>}
+        footer={<><button className="secondary-button" onClick={resetActionForm} disabled={actionSaving}>취소</button><button className="primary-button" onClick={saveAction} disabled={actionSaving}>{actionSaving ? "저장 중..." : "저장"}</button></>}
       >
         <div className="form-grid modal-form-grid single">
-          <label className="wide-field">조치 내용<textarea value={actionContent} onChange={(e) => setActionContent(e.target.value)} placeholder="확인 내용 또는 조치 내용을 입력" /></label>
-          <label>조치 후 상태<select value={actionStatusAfter} onChange={(e) => setActionStatusAfter(e.target.value)}><option value="ACKNOWLEDGED">확인</option><option value="IN_PROGRESS">조치중</option><option value="RESOLVED">조치완료</option></select></label>
+          {actionError && <div className="form-error">{actionError}</div>}
+          <label className="wide-field">조치 내용<textarea value={actionContent} onChange={(e) => setActionContent(e.target.value)} placeholder="확인 내용 또는 조치 내용을 입력" disabled={actionSaving} /></label>
+          <label>조치 후 상태<select value={actionStatusAfter} onChange={(e) => setActionStatusAfter(e.target.value)} disabled={actionSaving}><option value="ACKNOWLEDGED">확인</option><option value="IN_PROGRESS">조치중</option><option value="RESOLVED">조치완료</option></select></label>
         </div>
       </Modal>
 

@@ -37,6 +37,15 @@ public class EnvActionLog {
 
     public EnvActionLog() {}
 
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        if (createdAt == null) createdAt = now;
+        if (actionAt == null) actionAt = createdAt;
+        if (actionType == null || actionType.isBlank()) actionType = "CHECKED";
+        if (actionStatusAfter == null || actionStatusAfter.isBlank()) actionStatusAfter = "IN_PROGRESS";
+    }
+
     public LocalDateTime getActionAt() {
         return actionAt;
     }

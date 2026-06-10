@@ -372,21 +372,44 @@ public class GreenqCommandService {
 
     public EnvActionLog addEnvironmentAction(Long envNcId, Map<String, Object> req) {
         EnvNonconformity nc = envNonconformityRepository.findById(envNcId).orElseThrow();
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        String actionContent = str(req, "actionContent") == null ? "" : str(req, "actionContent").trim();
+        if (actionContent.isBlank()) {
+            throw new IllegalArgumentException("조치 내용을 입력하세요.");
+        }
+        String actionStatusAfter = normalizeEnvActionStatus(str(req, "actionStatusAfter"));
+        Long actionBy = defId(id(req, "actionBy"), 2L);
+
         EnvActionLog log = new EnvActionLog();
         log.setEnvNcId(envNcId);
-        log.setActionBy(defId(id(req, "actionBy"), 2L));
-        log.setActionAt(LocalDateTime.now());
+        log.setActionBy(actionBy);
+        log.setActionAt(now);
+        log.setCreatedAt(now);
         log.setActionType(def(str(req, "actionType"), "CHECKED"));
-        log.setActionContent(str(req, "actionContent"));
-        log.setActionStatusAfter(def(str(req, "actionStatusAfter"), "IN_PROGRESS"));
+        log.setActionContent(actionContent);
+        log.setActionStatusAfter(actionStatusAfter);
         log.setResultNote(str(req, "resultNote"));
-        nc.setEnvNcStatus(log.getActionStatusAfter());
-        if ("RESOLVED".equalsIgnoreCase(log.getActionStatusAfter())) {
-            envAlertService.closeByNonconformity(envNcId, log.getActionBy());
+
+        nc.setEnvNcStatus(actionStatusAfter);
+        if ("RESOLVED".equals(actionStatusAfter)) {
+            nc.setResolvedAt(now);
+            nc.setResolvedType("ACTION_MANUAL");
+            nc.setResolvedNote("작업자 조치 완료: " + actionContent);
+            envAlertService.closeByNonconformity(envNcId, actionBy);
         } else {
-            envAlertService.markReadByNonconformity(envNcId, log.getActionBy());
+            envAlertService.markReadByNonconformity(envNcId, actionBy);
         }
         return envActionLogRepository.save(log);
+    }
+
+    private static String normalizeEnvActionStatus(String value) {
+        if (value == null || value.isBlank()) return "IN_PROGRESS";
+        return switch (value.trim().toUpperCase()) {
+            case "ACKNOWLEDGED" -> "ACKNOWLEDGED";
+            case "IN_PROGRESS" -> "IN_PROGRESS";
+            case "RESOLVED" -> "RESOLVED";
+            default -> throw new IllegalArgumentException("지원하지 않는 조치 후 상태입니다.");
+        };
     }
 
     public QualityReviewLog addQualityReview(Long qualityNcId, Map<String, Object> req) {

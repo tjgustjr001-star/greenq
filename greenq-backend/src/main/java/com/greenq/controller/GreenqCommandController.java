@@ -4,6 +4,7 @@ import com.greenq.dto.ApiResponse;
 import com.greenq.service.GreenqCommandService;
 import com.greenq.service.EnvironmentSimulatorService;
 import com.greenq.service.EnvAlertService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -100,7 +101,15 @@ public class GreenqCommandController {
     }
 
     @PostMapping("/issues/env/{envNcId}/actions")
-    public ApiResponse<?> addEnvironmentAction(@PathVariable Long envNcId, @RequestBody Map<String, Object> request) {
+    public ApiResponse<?> addEnvironmentAction(
+            @PathVariable Long envNcId,
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        Object userId = httpRequest.getAttribute("greenqUserId");
+        if (userId != null) {
+            request.put("actionBy", userId);
+        }
         return ApiResponse.ok("조치 이력이 등록되었습니다.", service.addEnvironmentAction(envNcId, request));
     }
 
