@@ -1,5 +1,4 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
-
 import { greenqApi } from "../../api/greenqApi.js";
 import ActionMenu from "../../components/ActionMenu.jsx";
 import PageHeader from "../../components/PageHeader.jsx";
@@ -57,19 +56,15 @@ function renderAlertStatus(issue) {
   const closed = Number(issue.closedAlertCount ?? issue.alertClosedCount ?? 0);
   const status = String(issue.alertStatus || issue.envAlertStatus || "").toUpperCase();
 
-  if (unread > 0 || status === "UNREAD") {
-    return <span className="issue-alert-chip unread">미확인</span>;
-  }
-
-  if (read > 0 || status === "READ" || (active > 0 && closed === 0)) {
-    return <span className="issue-alert-chip read">확인됨</span>;
-  }
-
-  if (closed > 0 || status === "CLOSED") {
-    return <span className="issue-alert-chip closed">닫힘</span>;
-  }
+  if (unread > 0 || status === "UNREAD") return <span className="issue-alert-chip unread">미확인</span>;
+  if (read > 0 || status === "READ" || (active > 0 && closed === 0)) return <span className="issue-alert-chip read">확인됨</span>;
+  if (closed > 0 || status === "CLOSED") return <span className="issue-alert-chip closed">닫힘</span>;
 
   return <span className="issue-alert-muted">-</span>;
+}
+
+function issueTypeLabel(type) {
+  return type === "env" ? "환경" : "품질";
 }
 
 export default function IssueListPage() {
@@ -198,7 +193,7 @@ export default function IssueListPage() {
                   <td title={occurredAt.full}>
                     <span className="issue-date-cell">{occurredAt.short}</span>
                   </td>
-                  <td>{issue.issueType === "env" ? "환경" : "품질"}</td>
+                  <td>{issueTypeLabel(issue.issueType)}</td>
                   <td>{issue.zoneName || "-"}</td>
                   <td className="text-left">
                     <button
@@ -229,8 +224,43 @@ export default function IssueListPage() {
                 </tr>
               );
             })}
+            {rows.length === 0 && <tr><td colSpan={10} className="empty-table-cell">조회 조건에 맞는 부적합 이력이 없습니다.</td></tr>}
           </tbody>
         </table>
+
+        <div className="responsive-card-list issue-responsive-list">
+          {rows.map((issue) => {
+            const occurredAt = formatListDateTime(issue.occurredAt);
+            const measuredValue = formatNumber(issue.measuredValue);
+            const standardRange = formatNumberText(issue.standardRange);
+
+            return (
+              <article className="responsive-data-card issue-responsive-card" key={`card-${issue.issueType}-${issue.issueId}`}>
+                <div className="responsive-card-head">
+                  <span className="table-pill">{issueTypeLabel(issue.issueType)}</span>
+                  <div className="responsive-card-badges">
+                    <StatusBadge value={issue.severity} />
+                    {renderIssueStatus(issue)}
+                  </div>
+                </div>
+                <button type="button" className="responsive-card-title" onClick={() => goToDetail(issue)}>
+                  {issue.batchName || "-"}
+                </button>
+                <dl className="responsive-card-meta">
+                  <div><dt>발생일시</dt><dd title={occurredAt.full}>{occurredAt.full}</dd></div>
+                  <div><dt>구역</dt><dd>{issue.zoneName || "-"}</dd></div>
+                  <div><dt>항목</dt><dd>{issue.itemName || "-"}</dd></div>
+                  <div><dt>측정/기준</dt><dd>{measuredValue} / 기준 {standardRange}</dd></div>
+                  <div><dt>알림</dt><dd>{renderAlertStatus(issue)}</dd></div>
+                </dl>
+                <div className="responsive-card-actions">
+                  <ActionMenu items={getActionItems(issue)} />
+                </div>
+              </article>
+            );
+          })}
+          {rows.length === 0 && <div className="responsive-empty-card">조회 조건에 맞는 부적합 이력이 없습니다.</div>}
+        </div>
       </div>
     </div>
   );

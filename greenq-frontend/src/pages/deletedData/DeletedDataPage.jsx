@@ -79,6 +79,23 @@ export default function DeletedDataPage() {
               ))}
             </tbody>
           </table>
+          <div className="responsive-card-list deleted-responsive-list">
+            {rows.map((item) => (
+              <article className="responsive-data-card deleted-responsive-card" key={`card-${item.entityName}-${item.idValue}`}>
+                <div className="responsive-card-head">
+                  <span className="table-pill">{item.entityLabel}</span>
+                </div>
+                <strong className="responsive-card-title as-text">{item.displayName}</strong>
+                <dl className="responsive-card-meta">
+                  <div><dt>삭제일시</dt><dd>{item.deletedAt || "-"}</dd></div>
+                </dl>
+                <div className="deleted-mobile-actions">
+                  <button className="deleted-action-btn restore" onClick={() => restore(item)}>복원</button>
+                  <button className="deleted-action-btn remove" onClick={() => setRemoveTarget(item)}>영구 삭제</button>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       )}
 

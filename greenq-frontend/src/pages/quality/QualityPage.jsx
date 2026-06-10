@@ -110,6 +110,32 @@ export default function QualityPage() {
             {measurements.length === 0 && <tr><td colSpan={10} className="empty-table-cell">조회 조건에 맞는 실측 데이터가 없습니다.</td></tr>}
           </tbody>
         </table>
+        <div className="responsive-card-list quality-responsive-list">
+          {measurements.map((m) => (
+            <article className="responsive-data-card quality-responsive-card" key={`card-${m.measurementId}`}>
+              <div className="responsive-card-head">
+                <span className="table-pill">{m.cropName || "-"}</span>
+                <StatusBadge value={m.qualityStatus} />
+              </div>
+              <button type="button" className="responsive-card-title" onClick={() => navigate(`/quality/${m.measurementId}`)}>
+                {batchDisplayLabel(m)}
+              </button>
+              <dl className="responsive-card-meta">
+                <div><dt>측정일시</dt><dd>{m.measuredAt || "-"}</dd></div>
+                <div><dt>구역</dt><dd>{m.zoneName || "-"}</dd></div>
+                <div><dt>샘플</dt><dd>{m.sampleCount ?? "-"}</dd></div>
+                <div><dt>초장 평균</dt><dd>{m.plantHeight ?? "-"}</dd></div>
+                <div><dt>엽폭 평균</dt><dd>{m.leafWidth ?? "-"}</dd></div>
+                <div><dt>엽장 평균</dt><dd>{m.leafLength ?? "-"}</dd></div>
+                <div><dt>생체중 평균</dt><dd>{m.freshWeight ?? "-"}</dd></div>
+              </dl>
+              <div className="responsive-card-actions">
+                <ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/quality/${m.measurementId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => setDeleteTarget(m) }]} />
+              </div>
+            </article>
+          ))}
+          {measurements.length === 0 && <div className="responsive-empty-card">조회 조건에 맞는 실측 데이터가 없습니다.</div>}
+        </div>
       </div>
 
       <ConfirmDialog

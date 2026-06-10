@@ -236,6 +236,30 @@ export default function ReportListPage() {
             ))}
           </tbody>
         </table>
+        <div className="responsive-card-list report-responsive-list">
+          {reports.map((report) => (
+            <article className="responsive-data-card report-responsive-card" key={`card-${report.reportId}`}>
+              <div className="responsive-card-head">
+                <StatusBadge value={report.reportType} />
+                <StatusBadge value={report.reportStatus} />
+              </div>
+              <button type="button" className="responsive-card-title" onClick={() => navigate(`/reports/${report.reportId}`)}>
+                {report.reportTitle}
+              </button>
+              <dl className="responsive-card-meta">
+                <div><dt>범위</dt><dd>{labelOf(report.reportScope)}</dd></div>
+                <div><dt>대상</dt><dd>{report.targetName || "-"}</dd></div>
+                <div><dt>기간</dt><dd>{report.startDate} ~ {report.endDate}</dd></div>
+                <div><dt>버전</dt><dd>v{report.reportVersion || 1}</dd></div>
+                <div><dt>발급일</dt><dd>{report.createdAt || "-"}</dd></div>
+              </dl>
+              <div className="responsive-card-actions">
+                <ActionMenu items={[{ label: "상세 보기", kind: "detail", onClick: () => navigate(`/reports/${report.reportId}`) }, isAdmin && { label: "삭제", kind: "delete", danger: true, onClick: () => setDeleteTarget(report) }]} />
+              </div>
+            </article>
+          ))}
+          {reports.length === 0 && <div className="responsive-empty-card">발급된 리포트가 없습니다.</div>}
+        </div>
       </div>
 
       <Drawer
