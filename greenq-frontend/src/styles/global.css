@@ -4094,7 +4094,7 @@ button:disabled {
 .report-trend-single-line {
   fill: none;
   stroke: var(--primary);
-  stroke-width: 3.2;
+  stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -4110,11 +4110,17 @@ button:disabled {
 }
 
 .report-trend-point {
-  fill: #ffffff;
-  stroke: var(--primary-dark);
-  stroke-width: 2.6;
-  filter: drop-shadow(0 2px 4px rgba(25, 43, 31, 0.16));
+  fill: var(--primary);
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 1.2;
+  filter: none;
   vector-effect: non-scaling-stroke;
+}
+
+.report-trend-point.last-point {
+  fill: var(--primary-dark);
+  stroke: #ffffff;
+  stroke-width: 1.4;
 }
 
 .report-trend-y-label,

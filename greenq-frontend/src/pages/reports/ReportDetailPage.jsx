@@ -152,6 +152,8 @@ function ReportTrendChart({ rows, metric }) {
     return { x: xFor(point), label: formatDateLabel(point.measuredAt) };
   });
   const singlePointY = points.length === 1 ? yFor(points[0].value) : null;
+  const showAllPoints = points.length <= 12;
+  const visiblePoints = showAllPoints ? points : points.slice(-1);
 
   return (
     <div className="report-trend-chart-card">
@@ -183,8 +185,15 @@ function ReportTrendChart({ rows, metric }) {
           ) : (
             <line className="report-trend-single-line" x1={chartLeft} y1={singlePointY} x2={chartRight} y2={singlePointY} />
           )}
-          {points.map((point) => (
-            <circle key={`${point.measuredAt}-${point.value}`} className="report-trend-point" cx={xFor(point)} cy={yFor(point.value)} r="4.5" />
+          {visiblePoints.map((point, index) => (
+            <circle
+              key={`${point.measuredAt}-${point.value}`}
+              className={`report-trend-point ${showAllPoints ? "" : "last-point"}`}
+              cx={xFor(point)}
+              cy={yFor(point.value)}
+              r={showAllPoints ? "2" : "3"}
+              aria-label={showAllPoints || index === visiblePoints.length - 1 ? `${metric.label} ${formatNumber(point.value)}${metric.unit}` : undefined}
+            />
           ))}
           {xTicks.map((tick, index) => (
             <text key={`${tick.label}-${index}`} className="report-trend-x-label" x={tick.x} y={height - 14} textAnchor={index === 0 ? "start" : index === xTicks.length - 1 ? "end" : "middle"}>{tick.label}</text>
