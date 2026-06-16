@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+
+# frontend build
+dist/
+build/
+
+# Java / Gradle
+.gradle/
+**/build/
+target/
+out/
+
+# env
+.env
+.env.*
+!.env.example
+application-local.properties
+**/application-local.properties
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# logs / caches
+*.log
+.npm-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

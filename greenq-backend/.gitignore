@@ -5,4 +5,5 @@ target/
 *.iml
 .env
 application-secret.yml
+application-local.properties
 .zip
