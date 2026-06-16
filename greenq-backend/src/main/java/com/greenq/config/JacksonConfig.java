@@ -5,10 +5,14 @@ import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.TimeZone;
+
 @Configuration
 public class JacksonConfig {
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer bigDecimalPlainStringCustomizer() {
-        return builder -> builder.featuresToEnable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+        return builder -> builder
+                .featuresToEnable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
+                .timeZone(TimeZone.getTimeZone(TimeConfig.SEOUL_ZONE));
     }
 }

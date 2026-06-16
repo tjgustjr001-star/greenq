@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,6 +37,7 @@ public class EnvironmentSimulatorService {
     private final CultivationBatchRepository batchRepository;
     private final EnvironmentLogRepository environmentLogRepository;
     private final EnvironmentEvaluationService environmentEvaluationService;
+    private final Clock appClock;
 
     @PersistenceContext
     private EntityManager em;
@@ -43,11 +45,13 @@ public class EnvironmentSimulatorService {
     public EnvironmentSimulatorService(
             CultivationBatchRepository batchRepository,
             EnvironmentLogRepository environmentLogRepository,
-            EnvironmentEvaluationService environmentEvaluationService
+            EnvironmentEvaluationService environmentEvaluationService,
+            Clock appClock
     ) {
         this.batchRepository = batchRepository;
         this.environmentLogRepository = environmentLogRepository;
         this.environmentEvaluationService = environmentEvaluationService;
+        this.appClock = appClock;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -130,12 +134,12 @@ public class EnvironmentSimulatorService {
     }
 
     public Map<String, Object> generate(boolean forceAbnormal, Long batchId) {
-        return generateAt(forceAbnormal, batchId, LocalDateTime.now(), false);
+        return generateAt(forceAbnormal, batchId, now(), false);
     }
 
     private Map<String, Object> generateAt(boolean forceAbnormal, Long batchId, LocalDateTime measuredAt, boolean fixedSlot) {
         LocalDateTime now = normalizeMeasuredAt(measuredAt, fixedSlot);
-        LocalDateTime createdAt = LocalDateTime.now().withNano(0);
+        LocalDateTime createdAt = now();
         String dataSource = fixedSlot ? "SIMULATOR" : "SIMULATOR_TEST";
         List<CultivationBatch> targetBatches = findGrowingBatches(batchId);
 
@@ -210,13 +214,13 @@ public class EnvironmentSimulatorService {
     }
 
     private LocalDateTime currentHalfHourSlot() {
-        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        LocalDateTime now = now().withSecond(0).withNano(0);
         int minute = now.getMinute() < 30 ? 0 : 30;
         return now.withMinute(minute);
     }
 
     private LocalDateTime normalizeMeasuredAt(LocalDateTime measuredAt, boolean fixedSlot) {
-        LocalDateTime base = measuredAt == null ? LocalDateTime.now() : measuredAt;
+        LocalDateTime base = measuredAt == null ? now() : measuredAt;
         if (fixedSlot) {
             return base.withSecond(0).withNano(0);
         }
@@ -265,7 +269,7 @@ public class EnvironmentSimulatorService {
     }
 
     private LocalDateTime alignToHalfHourFloor(LocalDateTime value) {
-        LocalDateTime base = (value == null ? LocalDateTime.now() : value).withSecond(0).withNano(0);
+        LocalDateTime base = (value == null ? now() : value).withSecond(0).withNano(0);
         int minute = base.getMinute() < 30 ? 0 : 30;
         return base.withMinute(minute);
     }
@@ -357,5 +361,9 @@ public class EnvironmentSimulatorService {
 
     private static BigDecimal bd(String value) {
         return new BigDecimal(value);
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(appClock).withNano(0);
     }
 }

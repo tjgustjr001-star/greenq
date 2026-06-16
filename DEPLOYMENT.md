@@ -126,9 +126,12 @@ DB_NAME=<database-name>
 DB_USERNAME=<database-user>
 DB_PASSWORD=<database-password>
 CORS_ALLOWED_ORIGINS=https://<vercel-frontend-domain>
+TZ=Asia/Seoul
+JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
 ```
 
 Railway provides `PORT` automatically. The production profile uses `server.port=${PORT:8080}`.
+`TZ` and `JAVA_TOOL_OPTIONS` keep scheduled simulator timestamps and JVM date handling aligned to Korean time on Railway.
 
 If Railway provides a complete JDBC URL and you prefer to use it directly:
 
@@ -173,7 +176,24 @@ Do not add a trailing slash.
 - QR URL uses `VITE_PUBLIC_APP_URL` or the current frontend origin, not localhost.
 - CORS errors are not shown in DevTools.
 - Railway database contains schema and demo data.
+- Environment simulator logs show Korean current time in `measuredAt`, `createdAt`, and related alert timestamps.
 - If file/image upload is added later, storage path and persistence must be configured separately. The current project does not define a production upload storage layer.
+
+## Timezone Check
+
+After Railway redeploy:
+
+1. Check Railway variables include:
+
+```text
+TZ=Asia/Seoul
+JAVA_TOOL_OPTIONS=-Duser.timezone=Asia/Seoul
+```
+
+2. Run the environment simulator from the admin screen.
+3. Open environment monitoring and confirm the newest `measuredAt` is close to the current Korean time.
+4. Confirm related environment nonconformity and alert timestamps are also Korean time.
+5. If a timestamp is still 9 hours behind, redeploy the backend after saving Railway variables and check the active profile/logs.
 
 ## Manual Items
 

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,7 @@ public class EnvironmentEvaluationService {
     private final EnvEvaluationItemRepository evaluationItemRepository;
     private final EnvNonconformityRepository nonconformityRepository;
     private final EnvAlertService envAlertService;
+    private final Clock appClock;
 
     @PersistenceContext
     private EntityManager em;
@@ -36,13 +38,15 @@ public class EnvironmentEvaluationService {
             EnvironmentLogRepository environmentLogRepository,
             EnvEvaluationItemRepository evaluationItemRepository,
             EnvNonconformityRepository nonconformityRepository,
-            EnvAlertService envAlertService
+            EnvAlertService envAlertService,
+            Clock appClock
     ) {
         this.batchRepository = batchRepository;
         this.environmentLogRepository = environmentLogRepository;
         this.evaluationItemRepository = evaluationItemRepository;
         this.nonconformityRepository = nonconformityRepository;
         this.envAlertService = envAlertService;
+        this.appClock = appClock;
     }
     public EvaluationSummary evaluateSavedLog(EnvironmentLog log, String resolvedType, String resolvedNote) {
         if (log == null || log.getEnvLogId() == null) {
@@ -62,7 +66,7 @@ public class EnvironmentEvaluationService {
             return new EvaluationSummary(0, 0, 0, 0, List.of());
         }
 
-        LocalDateTime evaluatedAt = LocalDateTime.now().withNano(0);
+        LocalDateTime evaluatedAt = now();
         LocalDateTime occurredAt = log.getMeasuredAt() == null ? evaluatedAt : log.getMeasuredAt();
         String totalStatus = "NORMAL";
         int evaluatedItems = 0;
@@ -206,7 +210,7 @@ public class EnvironmentEvaluationService {
             nc.setItemName(standard.itemName());
             nc.setEnvNcStatus("OPEN");
             nc.setOccurredAt(occurredAt);
-            nc.setCreatedAt(LocalDateTime.now().withNano(0));
+            nc.setCreatedAt(now());
             nc.setDeleteYn("N");
         }
 
@@ -371,6 +375,10 @@ public class EnvironmentEvaluationService {
         if (value instanceof BigDecimal bd) return bd;
         if (value instanceof Number number) return BigDecimal.valueOf(number.doubleValue());
         return new BigDecimal(String.valueOf(value));
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(appClock).withNano(0);
     }
 
     public record EvaluationSummary(

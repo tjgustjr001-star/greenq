@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,12 +18,14 @@ import java.util.List;
 @Transactional
 public class EnvAlertService {
     private final EnvAlertRepository envAlertRepository;
+    private final Clock appClock;
 
     @PersistenceContext
     private EntityManager em;
 
-    public EnvAlertService(EnvAlertRepository envAlertRepository) {
+    public EnvAlertService(EnvAlertRepository envAlertRepository, Clock appClock) {
         this.envAlertRepository = envAlertRepository;
+        this.appClock = appClock;
     }
     public EnvAlert createOrRefreshAlert(EnvNonconformity nc, boolean createdNonconformity) {
         if (nc == null || nc.getEnvNcId() == null) {
@@ -36,7 +39,7 @@ public class EnvAlertService {
             alert.setBatchId(nc.getBatchId());
             alert.setZoneId(nc.getZoneId());
             alert.setNotifiedRole("ALL");
-            alert.setCreatedAt(LocalDateTime.now().withNano(0));
+            alert.setCreatedAt(now());
         }
 
         alert.setAlertLevel(normalizeLevel(nc.getSeverity()));
@@ -55,7 +58,7 @@ public class EnvAlertService {
         if (!"CLOSED".equalsIgnoreCase(String.valueOf(alert.getAlertStatus()))) {
             alert.setAlertStatus("READ");
         }
-        alert.setReadAt(LocalDateTime.now().withNano(0));
+        alert.setReadAt(now());
         alert.setReadBy(defaultUserId(userId));
         return alert;
     }
@@ -64,7 +67,7 @@ public class EnvAlertService {
         EnvAlert alert = envAlertRepository.findById(alertId).orElseThrow();
         alert.setAlertStatus("CLOSED");
         if (alert.getReadAt() == null) {
-            alert.setReadAt(LocalDateTime.now().withNano(0));
+            alert.setReadAt(now());
         }
         if (alert.getReadBy() == null) {
             alert.setReadBy(defaultUserId(userId));
@@ -78,7 +81,7 @@ public class EnvAlertService {
             if (!"CLOSED".equalsIgnoreCase(String.valueOf(alert.getAlertStatus()))) {
                 alert.setAlertStatus("READ");
             }
-            alert.setReadAt(LocalDateTime.now().withNano(0));
+            alert.setReadAt(now());
             alert.setReadBy(defaultUserId(userId));
         }
         return alerts.size();
@@ -86,7 +89,7 @@ public class EnvAlertService {
 
     public int closeByNonconformity(Long envNcId, Long userId) {
         List<EnvAlert> alerts = activeAlertsByNonconformity(envNcId);
-        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime now = now();
         for (EnvAlert alert : alerts) {
             alert.setAlertStatus("CLOSED");
             if (alert.getReadAt() == null) alert.setReadAt(now);
@@ -97,7 +100,7 @@ public class EnvAlertService {
 
     public int closeResolvedAlerts(Long envNcId) {
         List<EnvAlert> alerts = activeAlertsByNonconformity(envNcId);
-        LocalDateTime now = LocalDateTime.now().withNano(0);
+        LocalDateTime now = now();
         for (EnvAlert alert : alerts) {
             alert.setAlertStatus("CLOSED");
             if (alert.getReadAt() == null) alert.setReadAt(now);
@@ -172,5 +175,9 @@ public class EnvAlertService {
 
     private String safe(String value, String fallback) {
         return value == null || value.isBlank() ? String.valueOf(fallback) : value;
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(appClock).withNano(0);
     }
 }
